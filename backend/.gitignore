@@ -36,5 +36,7 @@ coverage/
 .nyc_output/
 
 # Prisma
-prisma/migrations/
-src/prisma/migrations/
+# IMPORTANT: migrations/ folder MUST be committed to git
+# Only ignore dev.db file if using SQLite locally
+*.db
+*.db-journal
