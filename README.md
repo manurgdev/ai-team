@@ -30,7 +30,9 @@ docker compose up -d
 - **[README-DOCKER.md](./README-DOCKER.md)** - Guía completa de uso con Docker
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Despliegue en producción
 - **[SECURITY-DOCKER.md](./SECURITY-DOCKER.md)** - Mejores prácticas de seguridad
-- **[TROUBLESHOOTING-DOCKER.md](./TROUBLESHOOTING-DOCKER.md)** - Solución de problemas
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Solución de problemas comunes
+
+> ⚠️ **Primera vez clonando el proyecto?** El script `start-dev.sh` ejecutará las migraciones automáticamente. Si encuentras problemas con la base de datos, ejecuta: `./scripts/dev/check-db.sh`
 
 ## Overview
 
@@ -154,7 +156,8 @@ docker compose down
 **¿Primera vez usando Docker?** Lee la [Guía Completa de Docker](./README-DOCKER.md)
 
 **Scripts útiles:**
-- `./scripts/dev/start-dev.sh` - Inicia ambiente de desarrollo
+- `./scripts/dev/start-dev.sh` - Inicia ambiente de desarrollo (ejecuta migraciones)
+- `./scripts/dev/check-db.sh` - Verifica estado de base de datos y migraciones
 - `./scripts/dev/stop-dev.sh` - Detiene servicios
 - `./scripts/dev/logs.sh [servicio]` - Ver logs
 - `./scripts/dev/reset-db.sh` - Reiniciar base de datos

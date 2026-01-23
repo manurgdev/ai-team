@@ -18,7 +18,13 @@ services:
     # Ejecutar migraciones y dev server
     command: >
       sh -c "
+        echo '🔄 Esperando a que PostgreSQL esté listo...' &&
+        sleep 3 &&
+        echo '📦 Generando Prisma Client...' &&
+        npx prisma generate --schema=./src/prisma/schema.prisma &&
+        echo '🔄 Ejecutando migraciones...' &&
         npx prisma migrate deploy --schema=./src/prisma/schema.prisma &&
+        echo '✅ Migraciones completadas. Iniciando servidor...' &&
         npm run dev
       "
 

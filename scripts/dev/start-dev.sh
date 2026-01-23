@@ -59,13 +59,23 @@ while [ $TRIES -lt $MAX_TRIES ]; do
     sleep 1
 done
 
-# Esperar Backend
-sleep 5
-if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
-    echo "   ✅ Backend: OK"
-else
-    echo "   ⚠️  Backend: No responde todavía (puede tomar unos segundos más)"
-fi
+# Esperar Backend (las migraciones pueden tomar tiempo)
+echo "   ⏳ Esperando a que backend complete migraciones..."
+sleep 10
+MAX_TRIES=30
+TRIES=0
+while [ $TRIES -lt $MAX_TRIES ]; do
+    if curl -sf http://localhost:3000/health > /dev/null 2>&1; then
+        echo "   ✅ Backend: OK"
+        break
+    fi
+    TRIES=$((TRIES + 1))
+    if [ $TRIES -eq $MAX_TRIES ]; then
+        echo "   ⚠️  Backend: No responde"
+        echo "   Ver logs: docker compose logs backend"
+    fi
+    sleep 2
+done
 
 # Verificar Frontend
 if curl -sf http://localhost > /dev/null 2>&1; then
@@ -78,9 +88,9 @@ echo ""
 echo "✨ ¡Ambiente de desarrollo listo!"
 echo ""
 echo "📍 Acceso a servicios:"
-echo "   Frontend:  http://localhost"
+echo "   Frontend:  http://localhost:5173"
 echo "   Backend:   http://localhost:3000"
-echo "   API Docs:  http://localhost:3000/api"
+echo "   API Health: http://localhost:3000/health"
 echo ""
 echo "📝 Comandos útiles:"
 echo "   Ver logs:      docker compose logs -f"
