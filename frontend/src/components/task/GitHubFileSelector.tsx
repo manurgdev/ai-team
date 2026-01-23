@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Loader2, Folder, File, ChevronRight, ChevronDown, AlertTriangle, XCircle } from 'lucide-react';
+import { Loader2, Folder, File, ChevronRight, ChevronDown, AlertTriangle, XCircle, X } from 'lucide-react';
 import { githubApi } from '../../lib/api/github';
 import { GitHubRepository, GitHubTreeNode, GitHubContextSelection } from '../../lib/types/github.types';
 
@@ -30,6 +30,18 @@ export function GitHubFileSelector({ onContextChange }: GitHubFileSelectorProps)
   useEffect(() => {
     loadRepositories();
   }, []);
+
+  // Update context when branch changes (with selected repo but no files)
+  useEffect(() => {
+    if (selectedRepo && selectedFiles.size === 0) {
+      onContextChange({
+        repository: selectedRepo,
+        branch,
+        selectedFiles: [],
+        totalTokens: 0,
+      });
+    }
+  }, [branch, selectedRepo, selectedFiles.size, onContextChange]);
 
   const loadRepositories = async () => {
     try {
@@ -91,8 +103,20 @@ export function GitHubFileSelector({ onContextChange }: GitHubFileSelectorProps)
   };
 
   const updateContext = async (selected: Set<string>) => {
-    if (selected.size === 0 || !selectedRepo) {
+    if (!selectedRepo) {
       onContextChange(null);
+      setTotalTokens(0);
+      return;
+    }
+
+    // Si no hay archivos seleccionados, aún pasamos el contexto del repositorio
+    if (selected.size === 0) {
+      onContextChange({
+        repository: selectedRepo,
+        branch,
+        selectedFiles: [],
+        totalTokens: 0,
+      });
       setTotalTokens(0);
       return;
     }
@@ -300,30 +324,70 @@ export function GitHubFileSelector({ onContextChange }: GitHubFileSelectorProps)
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Repository</Label>
-            <Select
-              value={selectedRepo?.full_name}
-              onValueChange={(value) => {
-                const repo = repositories.find(r => r.full_name === value);
-                setSelectedRepo(repo || null);
-                setFileTree([]);
-                setSelectedFiles(new Set());
-                setTotalTokens(0);
-                if (repo) {
-                  setBranch(repo.default_branch || 'main');
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select repository" />
-              </SelectTrigger>
-              <SelectContent>
-                {repositories.map(repo => (
-                  <SelectItem key={repo.id} value={repo.full_name}>
-                    {repo.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select
+                value={selectedRepo?.full_name || ""}
+                onValueChange={(value) => {
+                  if (!value) {
+                    setSelectedRepo(null);
+                    setFileTree([]);
+                    setSelectedFiles(new Set());
+                    setTotalTokens(0);
+                    onContextChange(null);
+                    return;
+                  }
+
+                  const repo = repositories.find(r => r.full_name === value);
+                  setSelectedRepo(repo || null);
+                  setFileTree([]);
+                  const emptySet = new Set<string>();
+                  setSelectedFiles(emptySet);
+                  setTotalTokens(0);
+                  if (repo) {
+                    const newBranch = repo.default_branch || 'main';
+                    setBranch(newBranch);
+                    // Actualizar contexto con repositorio seleccionado (sin archivos)
+                    onContextChange({
+                      repository: repo,
+                      branch: newBranch,
+                      selectedFiles: [],
+                      totalTokens: 0,
+                    });
+                  } else {
+                    onContextChange(null);
+                  }
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select repository" />
+                </SelectTrigger>
+                <SelectContent>
+                  {repositories.map(repo => (
+                    <SelectItem key={repo.id} value={repo.full_name}>
+                      {repo.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedRepo && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setSelectedRepo(null);
+                    setFileTree([]);
+                    setSelectedFiles(new Set());
+                    setTotalTokens(0);
+                    setError(null);
+                    onContextChange(null);
+                  }}
+                  title="Clear repository selection"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
