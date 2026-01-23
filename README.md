@@ -18,11 +18,11 @@ cd ai-team
 cp .env.example .env
 # Edita .env con tus configuraciones
 
-# 3. Iniciar con Docker Compose
-docker compose up -d
+# 3. Iniciar el ambiente de desarrollo
+make start-dev
 
 # 4. Acceder a la aplicación
-# Frontend: http://localhost
+# Frontend: http://localhost:5173
 # Backend API: http://localhost:3000
 ```
 
