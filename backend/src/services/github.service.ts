@@ -202,22 +202,67 @@ export class GitHubService {
     ref: string = 'main'
   ): Promise<GitHubFileContent[]> {
     const configFiles = [
+      // Documentation (helps identify project purpose and stack)
+      'README.md',
+
+      // JavaScript/TypeScript/Node.js
       'package.json',
+      'package-lock.json',
       'tsconfig.json',
       '.eslintrc',
       '.eslintrc.js',
       '.eslintrc.json',
-      '.prettierrc',
-      '.prettierrc.json',
-      'prettier.config.js',
-      'jest.config.js',
-      'jest.config.json',
+
+      // Framework-specific configs
       'vite.config.ts',
       'vite.config.js',
       'next.config.js',
+      'next.config.mjs',
+      'astro.config.mjs',
+      'astro.config.ts',
+      'nuxt.config.ts',
+      'nuxt.config.js',
+      'svelte.config.js',
+      'remix.config.js',
+      'gatsby-config.js',
+
+      // Styling
       'tailwind.config.js',
       'tailwind.config.ts',
+
+      // Python
+      'requirements.txt',
+      'pyproject.toml',
+      'setup.py',
+      'Pipfile',
+
+      // Go
+      'go.mod',
+
+      // Rust
+      'Cargo.toml',
+
+      // Java/Kotlin
+      'pom.xml',
+      'build.gradle',
+      'build.gradle.kts',
+
+      // Ruby
+      'Gemfile',
+
+      // PHP
+      'composer.json',
+
+      // Docker
+      'Dockerfile',
+      'docker-compose.yml',
+
+      // CI/CD
+      '.gitlab-ci.yml',
+
+      // Common
       '.gitignore',
+      '.editorconfig',
     ];
 
     const results: GitHubFileContent[] = [];

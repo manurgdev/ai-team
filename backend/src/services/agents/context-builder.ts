@@ -69,20 +69,82 @@ export class ContextBuilder {
       prompt += `The following files from the repository have been provided for context:\n\n`;
 
       // Separate configuration files from regular files
-      const configFiles = context.githubFiles.filter(f =>
-        f.path.includes('config') ||
-        f.path.startsWith('.eslint') ||
-        f.path.startsWith('.prettier') ||
+      const stackIdentifierFiles = context.githubFiles.filter(f =>
+        // Stack identifiers (critical for understanding project)
+        f.path === 'README.md' ||
         f.path === 'package.json' ||
         f.path === 'tsconfig.json' ||
-        f.path === '.gitignore'
+        f.path === 'requirements.txt' ||
+        f.path === 'pyproject.toml' ||
+        f.path === 'go.mod' ||
+        f.path === 'Cargo.toml' ||
+        f.path === 'pom.xml' ||
+        f.path === 'build.gradle' ||
+        f.path === 'Gemfile' ||
+        f.path === 'composer.json' ||
+        f.path === 'Dockerfile' ||
+        f.path === 'docker-compose.yml'
       );
-      const regularFiles = context.githubFiles.filter(f => !configFiles.includes(f));
 
-      // Show configuration files first if any
+      const configFiles = context.githubFiles.filter(f =>
+        !stackIdentifierFiles.includes(f) && (
+          f.path.includes('config') ||
+          f.path.startsWith('.eslint') ||
+          f.path.startsWith('.prettier') ||
+          f.path === '.gitignore' ||
+          f.path === '.editorconfig'
+        )
+      );
+
+      const regularFiles = context.githubFiles.filter(f =>
+        !stackIdentifierFiles.includes(f) && !configFiles.includes(f)
+      );
+
+      // Show stack identifier files FIRST (most critical)
+      if (stackIdentifierFiles.length > 0) {
+        prompt += `## 🎯 TECHNOLOGY STACK IDENTIFICATION\n\n`;
+        prompt += `**🚨 CRITICAL: These files identify the project's technology stack.**\n`;
+        prompt += `**You MUST analyze these files to understand what technologies, frameworks, and languages are used:**\n\n`;
+
+        for (const file of stackIdentifierFiles) {
+          prompt += `### ${file.path}\n`;
+          if (file.path === 'README.md') {
+            prompt += `*Project documentation - contains overview, setup instructions, and technology stack information*\n\n`;
+          } else if (file.path === 'package.json') {
+            prompt += `*Node.js/JavaScript/TypeScript project - defines dependencies, scripts, and project metadata*\n\n`;
+          } else if (file.path === 'requirements.txt' || file.path === 'pyproject.toml') {
+            prompt += `*Python project - defines dependencies and package configuration*\n\n`;
+          } else if (file.path === 'go.mod') {
+            prompt += `*Go project - defines module path and dependencies*\n\n`;
+          } else if (file.path === 'Cargo.toml') {
+            prompt += `*Rust project - defines package metadata and dependencies*\n\n`;
+          } else if (file.path === 'pom.xml' || file.path === 'build.gradle') {
+            prompt += `*Java/Kotlin project - defines dependencies and build configuration*\n\n`;
+          } else if (file.path === 'Gemfile') {
+            prompt += `*Ruby project - defines gem dependencies*\n\n`;
+          } else if (file.path === 'composer.json') {
+            prompt += `*PHP project - defines dependencies and project metadata*\n\n`;
+          } else if (file.path === 'Dockerfile' || file.path === 'docker-compose.yml') {
+            prompt += `*Docker configuration - shows containerization setup and tech stack*\n\n`;
+          }
+
+          prompt += `\`\`\`${file.language}\n`;
+          prompt += file.content;
+          prompt += `\n\`\`\`\n\n`;
+        }
+
+        prompt += `**INSTRUCTIONS: Based on the above files, you must:**\n`;
+        prompt += `1. Identify the primary programming language(s) used\n`;
+        prompt += `2. Identify the frameworks and libraries in use\n`;
+        prompt += `3. Create files that match this technology stack\n`;
+        prompt += `4. DO NOT introduce technologies from different stacks unless explicitly requested\n`;
+        prompt += `5. Follow the coding conventions and patterns shown in these files\n\n`;
+      }
+
+      // Show configuration files next
       if (configFiles.length > 0) {
         prompt += `## 🔧 Project Configuration Files\n\n`;
-        prompt += `**CRITICAL: These files define the project's conventions, linting rules, and build configuration.**\n`;
+        prompt += `**These files define the project's conventions, linting rules, and build configuration.**\n`;
         prompt += `**You MUST follow the rules defined in these files:**\n\n`;
 
         for (const file of configFiles) {

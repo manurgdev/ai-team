@@ -34,6 +34,7 @@ export function AgentOutputCard({ output }: AgentOutputCardProps) {
       backend: 'Backend Developer',
       devops: 'DevOps Engineer',
       qa: 'QA Engineer',
+      'task-completion-validator': 'Task Completion Validator',
     };
     return nameMap[output.agentRole] || output.agentRole;
   };

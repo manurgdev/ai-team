@@ -95,6 +95,17 @@ export function ExecutionViewer({
 
     const startExecution = async () => {
       try {
+        // Transform githubContext to match backend expectations
+        const transformedGithubContext = githubContext ? {
+          repository: {
+            owner: githubContext.repository.full_name.split('/')[0],
+            repo: githubContext.repository.full_name.split('/')[1],
+            fullName: githubContext.repository.full_name,
+          },
+          branch: githubContext.branch,
+          selectedFiles: githubContext.selectedFiles,
+        } : undefined;
+
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -107,7 +118,7 @@ export function ExecutionViewer({
             executionMode,
             provider,
             model,
-            githubContext,
+            githubContext: transformedGithubContext,
           }),
         });
 
@@ -337,7 +348,7 @@ export function ExecutionViewer({
       backend: 'Backend Developer',
       devops: 'DevOps Engineer',
       qa: 'QA Engineer',
-      'task-completion-validator': '✓ Task Completion Validator',
+      'task-completion-validator': 'Task Completion Validator',
     };
     return names[role] || role;
   };
