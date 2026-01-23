@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+# Instalar OpenSSL para Prisma
+RUN apk add --no-cache openssl libc6-compat
+
+WORKDIR /app
+
+# Copiar package files
+COPY package*.json ./
+COPY src/prisma/schema.prisma ./src/prisma/
+
+# Instalar dependencias
+RUN npm install
+
+# Generar Prisma Client
+RUN npx prisma generate --schema=./src/prisma/schema.prisma
+
+# El código fuente se montará como volumen
+CMD ["npm", "run", "dev"]

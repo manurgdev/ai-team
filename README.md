@@ -2,6 +2,36 @@
 
 A full-stack web application that enables creating virtual teams of specialized AI agents to collaborate on technical tasks. Results can be visualized or exported directly to GitHub.
 
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](./README-DOCKER.md)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-green?logo=github)](./github/workflows/docker-build.yml)
+
+## 🐳 Quick Start with Docker
+
+La forma más rápida de ejecutar AI Team es usando Docker:
+
+```bash
+# 1. Clonar el repositorio
+git clone <tu-repositorio-url>
+cd ai-team
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# Edita .env con tus configuraciones
+
+# 3. Iniciar con Docker Compose
+docker compose up -d
+
+# 4. Acceder a la aplicación
+# Frontend: http://localhost
+# Backend API: http://localhost:3000
+```
+
+**📚 Documentación completa de Docker:**
+- **[README-DOCKER.md](./README-DOCKER.md)** - Guía completa de uso con Docker
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Despliegue en producción
+- **[SECURITY-DOCKER.md](./SECURITY-DOCKER.md)** - Mejores prácticas de seguridad
+- **[TROUBLESHOOTING-DOCKER.md](./TROUBLESHOOTING-DOCKER.md)** - Solución de problemas
+
 ## Overview
 
 This platform allows you to create teams of AI agents with different specializations:
@@ -68,9 +98,72 @@ ai-team/
 └── README.md
 ```
 
+## 🏗️ Arquitectura Docker
+
+La aplicación está completamente dockerizada con una arquitectura de microservicios:
+
+```
+┌─────────────────────────────────────────┐
+│           Docker Host                    │
+│                                          │
+│  ┌──────────┐  ┌──────────┐  ┌────────┐│
+│  │ Frontend │◄─┤ Backend  │◄─┤Postgres││
+│  │ (Nginx)  │  │ (Node.js)│  │ (DB)   ││
+│  │ Port 80  │  │ Port 3000│  │Port5432││
+│  └──────────┘  └──────────┘  └────────┘│
+│         └──────── ai-team-network ──────┘│
+└─────────────────────────────────────────┘
+```
+
+**Características:**
+- ✅ Multi-stage builds para imágenes optimizadas
+- ✅ Health checks automáticos
+- ✅ Usuarios no-root en contenedores
+- ✅ Persistencia de datos con volúmenes
+- ✅ Red aislada personalizada
+- ✅ Configuraciones separadas para dev/prod
+
+**Archivos de configuración:**
+- `docker-compose.yml` - Configuración base
+- `docker-compose.override.yml` - Overrides para desarrollo (hot-reload)
+- `docker-compose.prod.yml` - Configuración de producción
+- `backend/Dockerfile` - Build del backend
+- `frontend/Dockerfile` - Build del frontend con Nginx
+
 ## Setup Instructions
 
-### Prerequisites
+### 🐳 Opción 1: Docker (Recomendado)
+
+La forma más fácil y rápida de ejecutar la aplicación:
+
+```bash
+# 1. Configurar variables de entorno
+cp .env.example .env
+# Edita .env con tus secretos
+
+# 2. Iniciar todos los servicios
+docker compose up -d
+
+# 3. Ver logs
+docker compose logs -f
+
+# 4. Detener servicios
+docker compose down
+```
+
+**¿Primera vez usando Docker?** Lee la [Guía Completa de Docker](./README-DOCKER.md)
+
+**Scripts útiles:**
+- `./scripts/dev/start-dev.sh` - Inicia ambiente de desarrollo
+- `./scripts/dev/stop-dev.sh` - Detiene servicios
+- `./scripts/dev/logs.sh [servicio]` - Ver logs
+- `./scripts/dev/reset-db.sh` - Reiniciar base de datos
+
+### 💻 Opción 2: Instalación Local
+
+Si prefieres ejecutar sin Docker:
+
+#### Prerequisites
 - Node.js 20+
 - PostgreSQL 14+
 - npm or yarn
@@ -308,7 +401,31 @@ The frontend will be running at `http://localhost:5173`
 
 ## Development
 
-### Running Tests
+### 🐳 Con Docker
+
+```bash
+# Ver logs en tiempo real
+docker compose logs -f
+
+# Ejecutar tests
+docker compose exec backend npm test
+
+# Ejecutar migraciones
+docker compose exec backend npx prisma migrate deploy
+
+# Acceder a base de datos
+docker compose exec postgres psql -U aiuser ai_team
+
+# Reiniciar un servicio
+docker compose restart backend
+
+# Ver uso de recursos
+docker stats
+```
+
+### 💻 Sin Docker
+
+#### Running Tests
 ```bash
 # Backend
 cd backend
@@ -319,7 +436,7 @@ cd frontend
 npm test
 ```
 
-### Building for Production
+#### Building for Production
 ```bash
 # Backend
 cd backend
@@ -328,6 +445,25 @@ npm run build
 # Frontend
 cd frontend
 npm run build
+```
+
+### 🛠️ Scripts de Mantenimiento
+
+```bash
+# Actualizar imágenes Docker
+./scripts/maintenance/update-images.sh
+
+# Verificar actualizaciones de dependencias
+./scripts/maintenance/check-updates.sh
+
+# Limpiar recursos no utilizados
+./scripts/maintenance/cleanup.sh
+
+# Backup de base de datos
+./scripts/prod/backup-db.sh
+
+# Health check
+./scripts/prod/health-check.sh
 ```
 
 ## Contributing

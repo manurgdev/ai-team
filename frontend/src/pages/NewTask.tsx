@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Play, Settings as SettingsIcon, ArrowRight } from 'lucide-react';
+import { Play, Settings as SettingsIcon } from 'lucide-react';
 import { useTeamStore } from '../store/team-store';
 import { useConfigStore } from '../store/config-store';
 import { configApi } from '../lib/api/config';

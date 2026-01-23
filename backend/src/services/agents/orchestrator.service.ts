@@ -1,4 +1,4 @@
-import { AIProvider, ProviderMessage, ToolCall, ToolResult } from '../providers/provider.interface';
+import { AIProvider, ProviderMessage, ToolResult } from '../providers/provider.interface';
 import { ProviderFactory } from '../providers/provider.factory';
 import {
   AgentContext,
@@ -330,10 +330,9 @@ export class OrchestratorService {
         // Get stored GitHub token
         const githubTokenService = await import('../github-token.service');
         const tokenService = new githubTokenService.GitHubTokenService();
-        const userId = (context as any).userId; // TODO: Pass userId properly
 
         try {
-          // Try to get stored token - this is a hack, should be passed properly
+          // Try to get stored token
           const storedToken = await tokenService.getDecryptedToken((await prisma.task.findUnique({ where: { id: taskId } }))?.userId || '');
           if (storedToken) {
             toolContext.githubToken = storedToken;
@@ -992,8 +991,6 @@ export class OrchestratorService {
     model?: string,
     progressCallback?: ProgressCallback
   ): Promise<{ validationOutput: AgentOutput; additionalOutputs: AgentOutput[] }> {
-    const MAX_COMPLETION_ROUNDS = 1; // Only 1 additional round to avoid infinite loops
-
     // Get the validator agent
     const validatorAgent = getAgentDefinition('task-completion-validator');
     if (!validatorAgent) {
@@ -1604,10 +1601,10 @@ export class OrchestratorService {
     }));
 
     // Run validator to get current state
-    const validationResult = await this.validateAndCompleteTask(
+    await this.validateAndCompleteTask(
       taskId,
       originalAgents,
-      existingOutputs,
+      existingOutputs as any,
       task.description,
       provider,
       providerName,

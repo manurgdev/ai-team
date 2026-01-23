@@ -170,9 +170,9 @@ export class GitHubController {
       const githubService = new GitHubService();
       const checks = await githubService.getPullRequestChecks(
         githubToken,
-        owner,
-        repo,
-        parseInt(pullNumber, 10)
+        Array.isArray(owner) ? owner[0] : owner,
+        Array.isArray(repo) ? repo[0] : repo,
+        parseInt(Array.isArray(pullNumber) ? pullNumber[0] : pullNumber, 10)
       );
 
       res.json(checks);
@@ -307,7 +307,7 @@ export class GitHubController {
       }
 
       const githubService = new GitHubService();
-      const exports = await githubService.getTaskExports(userId, taskId);
+      const exports = await githubService.getTaskExports(userId, Array.isArray(taskId) ? taskId[0] : taskId);
 
       res.json(exports);
     } catch (error: any) {

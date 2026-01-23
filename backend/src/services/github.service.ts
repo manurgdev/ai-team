@@ -320,7 +320,7 @@ export class GitHubService {
 
       return {
         total_count: allChecks.length,
-        check_runs: allChecks,
+        check_runs: allChecks as any,
       };
     } catch (error: any) {
       throw new Error(`Failed to get PR checks: ${error.message}`);
@@ -349,7 +349,6 @@ export class GitHubService {
     totalFiles: number;
   }> {
     console.log('=== Generate Export Preview ===');
-    const octokit = new Octokit({ auth: githubToken });
 
     // Get task with outputs
     const task = await prisma.task.findFirst({
@@ -875,83 +874,85 @@ export class GitHubService {
     }
   }
 
-  /**
-   * Create or update a file in a repository
-   */
-  private async createOrUpdateFile({
-    octokit,
-    owner,
-    repo,
-    branch,
-    path,
-    content,
-    message,
-  }: {
-    octokit: Octokit;
-    owner: string;
-    repo: string;
-    branch: string;
-    path: string;
-    content: string;
-    message: string;
-  }): Promise<void> {
-    try {
-      // Try to get existing file (to update)
-      const { data: existingFile } = await octokit.repos.getContent({
-        owner,
-        repo,
-        path,
-        ref: branch,
-      });
+  // /**
+  //  * Create or update a file in a repository
+  //  * Note: Currently unused but kept for future use
+  //  */
+  // private async _createOrUpdateFile({
+  //   octokit,
+  //   owner,
+  //   repo,
+  //   branch,
+  //   path,
+  //   content,
+  //   message,
+  // }: {
+  //   octokit: Octokit;
+  //   owner: string;
+  //   repo: string;
+  //   branch: string;
+  //   path: string;
+  //   content: string;
+  //   message: string;
+  // }): Promise<void> {
+  //   try {
+  //     // Try to get existing file (to update)
+  //     const { data: existingFile } = await octokit.repos.getContent({
+  //       owner,
+  //       repo,
+  //       path,
+  //       ref: branch,
+  //     });
 
-      // File exists, update it
-      if ('sha' in existingFile) {
-        await octokit.repos.createOrUpdateFileContents({
-          owner,
-          repo,
-          path,
-          message,
-          content: Buffer.from(content).toString('base64'),
-          branch,
-          sha: existingFile.sha,
-        });
-      }
-    } catch {
-      // File doesn't exist, create it
-      await octokit.repos.createOrUpdateFileContents({
-        owner,
-        repo,
-        path,
-        message,
-        content: Buffer.from(content).toString('base64'),
-        branch,
-      });
-    }
-  }
+  //     // File exists, update it
+  //     if ('sha' in existingFile) {
+  //       await octokit.repos.createOrUpdateFileContents({
+  //         owner,
+  //         repo,
+  //         path,
+  //         message,
+  //         content: Buffer.from(content).toString('base64'),
+  //         branch,
+  //         sha: existingFile.sha,
+  //       });
+  //     }
+  //   } catch {
+  //     // File doesn't exist, create it
+  //     await octokit.repos.createOrUpdateFileContents({
+  //       owner,
+  //       repo,
+  //       path,
+  //       message,
+  //       content: Buffer.from(content).toString('base64'),
+  //       branch,
+  //     });
+  //   }
+  // }
 
-  /**
-   * Format agent output for README
-   */
-  private formatAgentOutput(output: any): string {
-    let content = `# ${this.getAgentName(output.agentRole)}\n\n`;
+  // /**
+  //  * Format agent output for README
+  //  * Note: Currently unused but kept for future use
+  //  */
+  // private _formatAgentOutput(output: any): string {
+  //   let content = `# ${this.getAgentName(output.agentRole)}\n\n`;
 
-    content += `**Status:** ${output.status}\n`;
-    content += `**Execution Time:** ${(output.executionTime / 1000).toFixed(2)}s\n`;
-    content += `**Created:** ${new Date(output.createdAt).toISOString()}\n\n`;
+  //   content += `**Status:** ${output.status}\n`;
+  //   content += `**Execution Time:** ${(output.executionTime / 1000).toFixed(2)}s\n`;
+  //   content += `**Created:** ${new Date(output.createdAt).toISOString()}\n\n`;
 
-    content += `---\n\n`;
+  //   content += `---\n\n`;
 
-    content += output.content;
+  //   content += output.content;
 
-    if (output.artifacts && Array.isArray(output.artifacts) && output.artifacts.length > 0) {
-      content += `\n\n## Artifacts\n\n`;
-      output.artifacts.forEach((artifact: any) => {
-        content += `- [${artifact.filename}](./${artifact.filename})\n`;
-      });
-    }
+  //   if (output.artifacts && Array.isArray(output.artifacts) && output.artifacts.length > 0) {
+  //     content += `\n\n## Artifacts\n\n`;
+  //     output.artifacts.forEach((artifact: any) => {
+  //       content += `- [${artifact.filename}](./${artifact.filename})\n`;
+  //     });
+  //   }
 
-    return content;
-  }
+  //   return content;
+  // }
 
   /**
    * Generate Pull Request description

@@ -6,7 +6,8 @@ export type AgentRole =
   | 'frontend'
   | 'backend'
   | 'devops'
-  | 'qa';
+  | 'qa'
+  | 'task-completion-validator';
 
 export interface AgentDefinition {
   role: AgentRole;
@@ -56,6 +57,7 @@ export interface Task {
   nextPhaseDescription?: string | null;
   currentPhase?: string | null;
   parentTaskId?: string | null;
+  githubContext?: GitHubContextSelection;
 }
 
 export type ExecutionMode = 'sequential' | 'parallel';

@@ -1,27 +1,482 @@
-# Deployment Guide
+# 🚀 Guía de Despliegue en Producción - AI Team
 
-## Table of Contents
+Esta guía cubre el despliegue de la aplicación AI Team en ambientes de producción, incluyendo VPS, servidores dedicados y principales cloud providers.
 
-1. [Prerequisites](#prerequisites)
-2. [Local Development](#local-development)
-3. [Docker Deployment](#docker-deployment)
-4. [Production Deployment](#production-deployment)
-5. [Environment Variables](#environment-variables)
-6. [Database Migrations](#database-migrations)
-7. [Troubleshooting](#troubleshooting)
+## 📋 Tabla de Contenidos
+
+1. [Preparación para Producción](#preparación-para-producción)
+2. [VPS / Servidor Dedicado](#vps--servidor-dedicado)
+3. [AWS (Amazon Web Services)](#aws-amazon-web-services)
+4. [Google Cloud Platform](#google-cloud-platform)
+5. [Microsoft Azure](#microsoft-azure)
+6. [DigitalOcean](#digitalocean)
+7. [Railway / Render](#railway--render)
+8. [CI/CD con GitHub Actions](#cicd-con-github-actions)
+9. [Post-Deployment](#post-deployment)
+10. [Desarrollo Local](#desarrollo-local)
+
+## 🔒 Preparación para Producción
+
+### Checklist de Seguridad
+
+Antes de desplegar, verifica todos estos puntos:
+
+#### ✅ Variables de Entorno
+
+```bash
+# ❌ NUNCA uses estos valores en producción:
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+ENCRYPTION_SECRET=your-super-secret-encryption-key-change-this-in-production-must-be-32-chars
+DB_PASSWORD=aipassword
+
+# ✅ Genera secretos fuertes:
+# JWT_SECRET (mínimo 48 caracteres aleatorios)
+openssl rand -base64 48
+
+# ENCRYPTION_SECRET (exactamente 32 caracteres)
+openssl rand -base64 32 | cut -c1-32
+
+# DB_PASSWORD (contraseña fuerte)
+openssl rand -base64 24
+```
+
+#### ✅ CORS y Orígenes
+
+```env
+# ❌ MAL - Permite cualquier origen
+ALLOWED_ORIGINS=*
+
+# ❌ MAL - Incluye localhost en producción
+ALLOWED_ORIGINS=http://localhost,https://tudominio.com
+
+# ✅ BIEN - Solo dominios de producción
+ALLOWED_ORIGINS=https://tudominio.com,https://www.tudominio.com,https://app.tudominio.com
+```
+
+#### ✅ Variables de Entorno de Producción
+
+Crea un archivo `.env.production` (NO lo subas a Git):
+
+```env
+# Base de Datos (usa servicio gestionado en producción)
+DB_USER=ai_team_prod
+DB_PASSWORD=<contraseña-super-segura-generada>
+DB_NAME=ai_team_production
+DB_PORT=5432
+
+# Backend
+NODE_ENV=production
+BACKEND_PORT=3000
+
+# Seguridad
+JWT_SECRET=<secreto-generado-con-openssl>
+JWT_EXPIRES_IN=7d
+ENCRYPTION_SECRET=<exactamente-32-caracteres>
+
+# CORS (solo dominios de producción)
+ALLOWED_ORIGINS=https://tudominio.com,https://www.tudominio.com
+
+# Frontend
+FRONTEND_PORT=80
+VITE_API_URL=https://tudominio.com/api
+
+# API Keys (opcional, mejor configurar en la app)
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+GOOGLE_API_KEY=
+```
+
+#### ✅ Configuración de Docker para Producción
+
+Usa `docker-compose.prod.yml` en lugar de `docker-compose.yml`:
+
+```bash
+# Despliegue de producción
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+#### ✅ HTTPS/TLS
+
+⚠️ **OBLIGATORIO en producción**: Nunca expongas la aplicación sin HTTPS.
+
+Opciones:
+1. **Reverse Proxy** (Nginx/Caddy) con Let's Encrypt
+2. **Load Balancer** del cloud provider con certificado SSL
+3. **Cloudflare** como proxy con SSL automático
+
+## 🖥️ VPS / Servidor Dedicado
+
+Despliegue en servidores VPS (DigitalOcean Droplets, Linode, Vultr, OVH, etc.)
+
+### Requisitos del Servidor
+
+- **OS**: Ubuntu 22.04 LTS / Debian 12 (recomendado)
+- **RAM**: Mínimo 2GB (recomendado 4GB+)
+- **CPU**: 2 vCPUs o más
+- **Disco**: 20GB+ SSD
+- **Acceso**: SSH con clave pública
+
+### 1. Preparación del Servidor
+
+```bash
+# Conectar por SSH
+ssh root@tu-servidor-ip
+
+# Actualizar sistema
+apt update && apt upgrade -y
+
+# Instalar Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+
+# Verificar instalación
+docker --version
+docker compose version
+
+# Instalar herramientas adicionales
+apt install -y git ufw fail2ban
+```
+
+### 2. Configurar Firewall
+
+```bash
+# Permitir SSH, HTTP, HTTPS
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+
+# Habilitar firewall
+ufw enable
+ufw status
+```
+
+### 3. Clonar Repositorio
+
+```bash
+# Crear usuario no-root (opcional pero recomendado)
+adduser deploy
+usermod -aG docker deploy
+su - deploy
+
+# Clonar código
+git clone https://github.com/tu-usuario/ai-team.git
+cd ai-team
+```
+
+### 4. Configurar Variables de Entorno
+
+```bash
+# Copiar template
+cp .env.example .env.production
+
+# Editar con nano o vim
+nano .env.production
+
+# Generar secretos
+openssl rand -base64 48  # JWT_SECRET
+openssl rand -base64 32 | cut -c1-32  # ENCRYPTION_SECRET
+```
+
+### 5. Desplegar Aplicación
+
+```bash
+# Construir imágenes
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+
+# Iniciar servicios
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Verificar estado
+docker compose ps
+
+# Ver logs
+docker compose logs -f
+```
+
+### 6. Configurar Nginx como Reverse Proxy
+
+Instala Nginx en el host (fuera de Docker):
+
+```bash
+apt install -y nginx certbot python3-certbot-nginx
+```
+
+Crea configuración `/etc/nginx/sites-available/ai-team`:
+
+```nginx
+server {
+    listen 80;
+    server_name tudominio.com www.tudominio.com;
+
+    # Redirigir todo a HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name tudominio.com www.tudominio.com;
+
+    # Certificados SSL (se generarán con certbot)
+    ssl_certificate /etc/letsencrypt/live/tudominio.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tudominio.com/privkey.pem;
+
+    # Configuración SSL moderna
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Headers de seguridad
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Tamaño máximo de archivo
+    client_max_body_size 20M;
+
+    # Proxy al frontend
+    location / {
+        proxy_pass http://localhost:80;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Proxy al backend API
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Timeouts para requests largos de AI
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+}
+```
+
+Habilitar sitio:
+
+```bash
+# Crear symlink
+ln -s /etc/nginx/sites-available/ai-team /etc/nginx/sites-enabled/
+
+# Verificar configuración
+nginx -t
+
+# Recargar Nginx
+systemctl reload nginx
+```
+
+### 7. Obtener Certificado SSL
+
+```bash
+# Obtener certificado de Let's Encrypt
+certbot --nginx -d tudominio.com -d www.tudominio.com
+
+# El certificado se renovará automáticamente
+# Verificar renovación automática
+certbot renew --dry-run
+```
+
+### 8. Configurar Auto-Reinicio
+
+Crea servicio systemd `/etc/systemd/system/ai-team.service`:
+
+```ini
+[Unit]
+Description=AI Team Application
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/deploy/ai-team
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+ExecStop=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+User=deploy
+Group=deploy
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Habilitar servicio:
+
+```bash
+systemctl daemon-reload
+systemctl enable ai-team
+systemctl start ai-team
+systemctl status ai-team
+```
+
+## ☁️ AWS (Amazon Web Services)
+
+### ECS con Fargate (Recomendado)
+
+**Arquitectura**:
+- ECS Fargate: Contenedores serverless
+- RDS PostgreSQL: Base de datos gestionada
+- ALB: Load balancer con HTTPS
+- Secrets Manager: Gestión de secretos
+- CloudWatch: Logs y monitoreo
+
+Ver [README-DOCKER.md](./README-DOCKER.md) para arquitectura detallada y guía paso a paso de AWS.
+
+## 🔵 Google Cloud Platform
+
+### Cloud Run (Serverless)
+
+**Ventajas**: Auto-scaling, pago por uso, fácil deployment
+
+Ver [README-DOCKER.md](./README-DOCKER.md) para guía completa de GCP.
+
+## 🌐 Microsoft Azure
+
+### Azure Container Instances + Azure Database for PostgreSQL
+
+Ver [README-DOCKER.md](./README-DOCKER.md) para guía completa de Azure.
+
+## 🐋 DigitalOcean
+
+### App Platform (PaaS - Más Fácil)
+
+Ver [README-DOCKER.md](./README-DOCKER.md) para guía completa de DigitalOcean.
+
+## 🚂 Railway / Render
+
+### Railway
+
+Railway es extremadamente simple para deployment de Docker:
+
+```bash
+# Instalar CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Crear proyecto
+railway init
+
+# Agregar PostgreSQL
+railway add --plugin postgresql
+
+# Configurar variables
+railway variables set JWT_SECRET=$(openssl rand -base64 48)
+railway variables set ENCRYPTION_SECRET=$(openssl rand -base64 32 | cut -c1-32)
+railway variables set NODE_ENV=production
+
+# Deploy (Railway detecta Dockerfile automáticamente)
+railway up
+```
+
+Railway provee dominio automático con HTTPS. Puedes agregar dominio personalizado en la UI.
+
+### Render
+
+Similar a Railway:
+
+1. Conecta tu repositorio de GitHub
+2. Render detecta `docker-compose.yml` y Dockerfiles
+3. Configura variables de entorno en la UI
+4. Deploy automático
+
+Render ofrece plan gratuito con limitaciones (servicios duermen tras inactividad).
+
+## 🔄 CI/CD con GitHub Actions
+
+Ver archivo `.github/workflows/docker-build.yml` para workflow completo.
+
+### Secrets Necesarios
+
+Configura en GitHub: Settings → Secrets and variables → Actions
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `PROD_HOST` (IP del servidor)
+- `PROD_USER` (usuario SSH)
+- `PROD_SSH_KEY` (clave privada SSH)
+
+## ✅ Post-Deployment
+
+### Verificaciones
+
+```bash
+# 1. Health check
+curl https://tudominio.com/api/health
+
+# 2. Verificar logs
+docker compose logs -f --tail=100
+
+# 3. Verificar que PostgreSQL está accesible
+docker compose exec backend npx prisma migrate status
+
+# 4. Monitorear recursos
+docker stats
+
+# 5. Verificar certificado SSL
+curl -vI https://tudominio.com 2>&1 | grep "SSL certificate verify"
+```
+
+### Configuración de Monitoreo
+
+Considera herramientas como:
+- **Uptime monitoring**: UptimeRobot, Pingdom
+- **Application monitoring**: New Relic, Datadog, Sentry
+- **Log aggregation**: Logtail, Papertrail, CloudWatch Logs
+- **Alertas**: PagerDuty, Slack webhooks
+
+### Backups Automáticos
+
+```bash
+# Crear script de backup
+nano /home/deploy/backup-db.sh
+```
+
+```bash
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/home/deploy/backups"
+mkdir -p $BACKUP_DIR
+
+docker compose exec -T postgres pg_dump -U aiuser ai_team | gzip > $BACKUP_DIR/backup_$DATE.sql.gz
+
+# Mantener solo últimos 30 días
+find $BACKUP_DIR -name "backup_*.sql.gz" -mtime +30 -delete
+```
+
+```bash
+# Hacer ejecutable
+chmod +x /home/deploy/backup-db.sh
+
+# Agregar a crontab (diario a las 2 AM)
+crontab -e
+# Agregar: 0 2 * * * /home/deploy/backup-db.sh
+```
 
 ---
 
-## Prerequisites
+## 📚 Desarrollo Local
 
-- Node.js 20+ (for local development)
-- PostgreSQL 14+ (for local development)
-- Docker & Docker Compose (for containerized deployment)
-- Git
+### Prerequis itos
 
----
-
-## Local Development
+- Node.js 20+
+- PostgreSQL 14+
+- npm o yarn
+- Docker & Docker Compose (opcional)
 
 ### Backend Setup
 
@@ -92,11 +547,7 @@ npm run dev
 
 The frontend will be running at `http://localhost:5173`.
 
----
-
-## Docker Deployment
-
-### Using Docker Compose (Recommended)
+### Using Docker Compose (Recomendado para Desarrollo)
 
 1. Clone the repository:
 ```bash

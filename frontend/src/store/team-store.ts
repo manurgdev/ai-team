@@ -12,6 +12,7 @@ interface TeamState {
   isLoading: boolean;
 
   setAvailableAgents: (agents: AgentDefinition[]) => void;
+  setSelectedAgents: (agents: AgentRole[]) => void;
   toggleAgent: (role: AgentRole) => void;
   setExecutionMode: (mode: ExecutionMode) => void;
   setTaskDescription: (description: string) => void;
@@ -32,6 +33,8 @@ export const useTeamStore = create<TeamState>((set) => ({
   isLoading: false,
 
   setAvailableAgents: (agents) => set({ availableAgents: agents }),
+
+  setSelectedAgents: (agents) => set({ selectedAgents: agents }),
 
   toggleAgent: (role) =>
     set((state) => {

@@ -7,7 +7,11 @@
       "WebSearch",
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(find:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(chmod:*)",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(ls:*)"
     ]
   }
 }

@@ -1,0 +1,180 @@
+# docker-compose.prod.yml
+# Configuración para producción
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  # PostgreSQL con configuraciones de producción
+  postgres:
+    # Restart policy agresivo para producción
+    restart: always
+
+    # NO exponer puerto al host en producción (solo acceso interno)
+    ports: []
+
+    # Health check más frecuente
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aiuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    # Límites de recursos
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+    # Configuración de PostgreSQL para producción
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "work_mem=4MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "wal_buffers=8MB"
+      - "-c"
+      - "min_wal_size=1GB"
+      - "-c"
+      - "max_wal_size=4GB"
+      - "-c"
+      - "log_statement=none"
+      - "-c"
+      - "log_duration=off"
+      - "-c"
+      - "log_min_duration_statement=1000"  # Log solo queries > 1s
+
+    # Logging optimizado
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backend con configuraciones de producción
+  backend:
+    # Restart policy
+    restart: always
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Límites de recursos
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Seguridad: eliminar privilegios innecesarios
+    security_opt:
+      - no-new-privileges:true
+
+    # Sistema de archivos read-only (excepto directorios específicos)
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.npm
+
+    # Capabilities mínimas
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+    # Logging optimizado
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+    # Asegurar NODE_ENV=production
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+  # Frontend con configuraciones de producción
+  frontend:
+    # Restart policy
+    restart: always
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    # Límites de recursos (frontend es más liviano)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # Seguridad
+    security_opt:
+      - no-new-privileges:true
+
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+
+    # Logging optimizado
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Configuración de red más estricta (opcional)
+# Puedes descomentar si quieres mayor aislamiento
+# networks:
+#   frontend-network:
+#     driver: bridge
+#   backend-network:
+#     driver: bridge
+#     internal: true  # Sin acceso a internet
+#   db-network:
+#     driver: bridge
+#     internal: true

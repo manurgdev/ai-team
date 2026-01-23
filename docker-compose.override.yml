@@ -1,0 +1,72 @@
+# docker-compose.override.yml
+# Este archivo se aplica automáticamente en desarrollo sobre docker-compose.yml
+# Proporciona configuraciones optimizadas para desarrollo local
+
+services:
+  # Backend con hot-reload para desarrollo
+  backend:
+    # Construir imagen de desarrollo
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+
+    # Usar bind mount para hot-reload (solo src y config)
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/tsconfig.json:/app/tsconfig.json
+
+    # Ejecutar migraciones y dev server
+    command: >
+      sh -c "
+        npx prisma migrate deploy --schema=./src/prisma/schema.prisma &&
+        npm run dev
+      "
+
+    # Variables específicas de desarrollo
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+
+    # Exponer puerto adicional para debugging
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+      - "9229:9229"  # Node.js debugger
+
+  # Frontend con hot-reload
+  frontend:
+    # Construir imagen de desarrollo
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+
+    # Usar bind mount para hot-reload (solo src y config)
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tsconfig.node.json:/app/tsconfig.node.json
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/postcss.config.js
+
+    # Puerto de desarrollo de Vite (HMR)
+    ports:
+      - "5173:5173"  # Vite dev server
+
+  # PostgreSQL con configuraciones de desarrollo
+  postgres:
+    # Exponer puerto para acceso directo desde herramientas
+    ports:
+      - "${DB_PORT:-5432}:5432"
+
+    # Logging más verboso para desarrollo
+    environment:
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+
+    # Usar volumen nombrado (más fácil de limpiar en dev)
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+
+volumes:
+  postgres_data_dev:
+    driver: local

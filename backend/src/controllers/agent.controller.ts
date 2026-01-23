@@ -122,7 +122,7 @@ export class AgentController {
         return;
       }
 
-      const { taskDescription, selectedAgents, executionMode, provider, model, githubContext } = req.body;
+      const { taskDescription, selectedAgents, executionMode, provider, model } = req.body;
 
       // Validate inputs
       if (!taskDescription || !selectedAgents || !executionMode || !provider) {
@@ -443,9 +443,9 @@ You will see all previously created files below. Review them carefully:
         apiKey,
         userId: req.userId,
         githubContext: originalTask.githubContext as any,
-        previousOutputs: originalTask.agentOutputs, // Pass artifacts from original task!
+        previousOutputs: originalTask.agentOutputs as any, // Pass artifacts from original task!
         originalTaskId: originalTaskId, // Continue the same task!
-      }, progressCallback).then((result) => {
+      }, progressCallback).then(() => {
         // Send completion - taskId should be the original task
         res.write(`event: review-complete\n`);
         res.write(`data: ${JSON.stringify({
@@ -627,7 +627,7 @@ ${output.artifacts?.length ? `\nArtifacts: ${output.artifacts.length} file(s)` :
         apiKey,
         req.userId,
         progressCallback
-      ).then((result) => {
+      ).then(() => {
         // Send completion
         res.write(`event: completion-complete\n`);
         res.write(`data: ${JSON.stringify({ taskId, success: true })}\n\n`);

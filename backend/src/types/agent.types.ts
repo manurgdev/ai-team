@@ -4,7 +4,8 @@ export type AgentRole =
   | 'frontend'
   | 'backend'
   | 'devops'
-  | 'qa';
+  | 'qa'
+  | 'task-completion-validator';
 
 export interface AgentDefinition {
   role: AgentRole;
