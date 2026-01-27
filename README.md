@@ -1,5 +1,7 @@
 # AI Team Collaboration Platform
 
+> **🧪 Experimental Learning Project**: This project was created for learning and research purposes to explore AI agent collaboration patterns. It's an evolving experiment where I'm discovering best practices through hands-on development. Contributions, feedback, and learning together are highly encouraged!
+
 A full-stack web application that enables creating virtual teams of specialized AI agents to collaborate on technical tasks. Results can be visualized or exported directly to GitHub.
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](./README-DOCKER.md)
@@ -463,7 +465,54 @@ npm run build
 
 ## Contributing
 
-This is a private project. Please contact the maintainer for contribution guidelines.
+We welcome contributions to this experimental learning project! Whether you're fixing bugs, improving documentation, or proposing new features, your input is valued.
+
+### Ways to Contribute
+- 🐛 Report bugs and issues
+- 💡 Suggest new features or improvements
+- 📝 Improve documentation
+- 🔧 Submit bug fixes or enhancements
+- ⭐ Star the project if you find it useful
+
+### Getting Started
+1. **Fork the repository** and clone your fork
+2. **Set up the development environment** using our [Docker setup guide](./README-DOCKER.md)
+3. **Create a feature branch**: `git checkout -b feature/your-feature-name`
+4. **Make your changes** following the existing code style
+5. **Test your changes** thoroughly
+6. **Commit your changes**: Use clear, descriptive commit messages
+7. **Push to your fork** and submit a Pull Request
+
+### Development Setup
+Follow the setup instructions in this README:
+- [Quick Start with Docker](./README-DOCKER.md) (recommended)
+- [Local Installation](#-option-2-local-installation) (alternative)
+
+### Code Style
+- Backend: TypeScript with ESLint configuration
+- Frontend: React + TypeScript with ESLint and Prettier
+- Follow existing patterns in the codebase
+- Write clear, self-documenting code
+
+### Testing
+- Run backend tests: `npm test` in `backend/`
+- Run frontend tests: `npm test` in `frontend/`
+- Ensure all tests pass before submitting PR
+
+### Pull Request Guidelines
+- Provide a clear description of the changes
+- Reference any related issues
+- Include screenshots for UI changes
+- Ensure CI checks pass
+- Be responsive to feedback
+
+### Questions or Issues?
+- Check existing [Issues](https://github.com/manurgdev/ai-team/issues)
+- Open a new issue for bugs or feature requests
+- For questions about setup, refer to [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+
+### Code of Conduct
+Be respectful, inclusive, and constructive in all interactions. This is a learning environment where everyone's contributions matter.
 
 ## License
 
