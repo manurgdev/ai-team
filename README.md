@@ -3,36 +3,34 @@
 A full-stack web application that enables creating virtual teams of specialized AI agents to collaborate on technical tasks. Results can be visualized or exported directly to GitHub.
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](./README-DOCKER.md)
-[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-green?logo=github)](./github/workflows/docker-build.yml)
 
 ## 🐳 Quick Start with Docker
 
-La forma más rápida de ejecutar AI Team es usando Docker:
+The fastest way to run AI Team is using Docker:
 
 ```bash
-# 1. Clonar el repositorio
-git clone <tu-repositorio-url>
+# 1. Clone the repository
+git clone git@github.com:manurgdev/ai-team.git
 cd ai-team
 
-# 2. Configurar variables de entorno
+# 2. Configure environment variables
 cp .env.example .env
-# Edita .env con tus configuraciones
+# Edit .env with your configurations
 
-# 3. Iniciar el ambiente de desarrollo
+# 3. Start the development environment
 make start-dev
 
-# 4. Acceder a la aplicación
+# 4. Access the application
 # Frontend: http://localhost:5173
 # Backend API: http://localhost:3000
 ```
 
-**📚 Documentación completa de Docker:**
-- **[README-DOCKER.md](./README-DOCKER.md)** - Guía completa de uso con Docker
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Despliegue en producción
-- **[SECURITY-DOCKER.md](./SECURITY-DOCKER.md)** - Mejores prácticas de seguridad
-- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Solución de problemas comunes
+**📚 Complete Docker documentation:**
+- **[README-DOCKER.md](./README-DOCKER.md)** - Complete Docker usage guide
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Production deployment
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common troubleshooting
 
-> ⚠️ **Primera vez clonando el proyecto?** El script `start-dev.sh` ejecutará las migraciones automáticamente. Si encuentras problemas con la base de datos, ejecuta: `./scripts/dev/check-db.sh`
+> ⚠️ **First time cloning the project?** The `start-dev.sh` script will run migrations automatically. If you encounter database issues, run: `./scripts/dev/check-db.sh`
 
 ## Overview
 
@@ -100,9 +98,9 @@ ai-team/
 └── README.md
 ```
 
-## 🏗️ Arquitectura Docker
+## 🏗️ Docker Architecture
 
-La aplicación está completamente dockerizada con una arquitectura de microservicios:
+The application is fully dockerized with a microservices architecture:
 
 ```
 ┌─────────────────────────────────────────┐
@@ -111,60 +109,60 @@ La aplicación está completamente dockerizada con una arquitectura de microserv
 │  ┌──────────┐  ┌──────────┐  ┌────────┐│
 │  │ Frontend │◄─┤ Backend  │◄─┤Postgres││
 │  │ (Nginx)  │  │ (Node.js)│  │ (DB)   ││
-│  │ Port 80  │  │ Port 3000│  │Port5432││
+│  │ Port 5173│  │ Port 3000│  │Port5432││
 │  └──────────┘  └──────────┘  └────────┘│
 │         └──────── ai-team-network ──────┘│
 └─────────────────────────────────────────┘
 ```
 
-**Características:**
-- ✅ Multi-stage builds para imágenes optimizadas
-- ✅ Health checks automáticos
-- ✅ Usuarios no-root en contenedores
-- ✅ Persistencia de datos con volúmenes
-- ✅ Red aislada personalizada
-- ✅ Configuraciones separadas para dev/prod
+**Features:**
+- ✅ Multi-stage builds for optimized images
+- ✅ Automatic health checks
+- ✅ Non-root users in containers
+- ✅ Data persistence with volumes
+- ✅ Isolated custom network
+- ✅ Separate configurations for dev/prod
 
-**Archivos de configuración:**
-- `docker-compose.yml` - Configuración base
-- `docker-compose.override.yml` - Overrides para desarrollo (hot-reload)
-- `docker-compose.prod.yml` - Configuración de producción
-- `backend/Dockerfile` - Build del backend
-- `frontend/Dockerfile` - Build del frontend con Nginx
+**Configuration files:**
+- `docker-compose.yml` - Base configuration
+- `docker-compose.override.yml` - Development overrides (hot-reload)
+- `docker-compose.prod.yml` - Production configuration
+- `backend/Dockerfile` - Backend build
+- `frontend/Dockerfile` - Frontend build with Nginx
 
 ## Setup Instructions
 
-### 🐳 Opción 1: Docker (Recomendado)
+### 🐳 Option 1: Docker (Recommended)
 
-La forma más fácil y rápida de ejecutar la aplicación:
+The easiest and fastest way to run the application:
 
 ```bash
-# 1. Configurar variables de entorno
+# 1. Configure environment variables
 cp .env.example .env
-# Edita .env con tus secretos
+# Edit .env with your secrets
 
-# 2. Iniciar todos los servicios
+# 2. Start all services
 docker compose up -d
 
-# 3. Ver logs
+# 3. View logs
 docker compose logs -f
 
-# 4. Detener servicios
+# 4. Stop services
 docker compose down
 ```
 
-**¿Primera vez usando Docker?** Lee la [Guía Completa de Docker](./README-DOCKER.md)
+**First time using Docker?** Read the [Complete Docker Guide](./README-DOCKER.md)
 
-**Scripts útiles:**
-- `./scripts/dev/start-dev.sh` - Inicia ambiente de desarrollo (ejecuta migraciones)
-- `./scripts/dev/check-db.sh` - Verifica estado de base de datos y migraciones
-- `./scripts/dev/stop-dev.sh` - Detiene servicios
-- `./scripts/dev/logs.sh [servicio]` - Ver logs
-- `./scripts/dev/reset-db.sh` - Reiniciar base de datos
+**Useful scripts:**
+- `./scripts/dev/start-dev.sh` - Start development environment (runs migrations)
+- `./scripts/dev/check-db.sh` - Check database and migration status
+- `./scripts/dev/stop-dev.sh` - Stop services
+- `./scripts/dev/logs.sh [service]` - View logs
+- `./scripts/dev/reset-db.sh` - Reset database
 
-### 💻 Opción 2: Instalación Local
+### 💻 Option 2: Local Installation
 
-Si prefieres ejecutar sin Docker:
+If you prefer to run without Docker:
 
 #### Prerequisites
 - Node.js 20+
@@ -404,29 +402,29 @@ The frontend will be running at `http://localhost:5173`
 
 ## Development
 
-### 🐳 Con Docker
+### 🐳 With Docker
 
 ```bash
-# Ver logs en tiempo real
+# View logs in real-time
 docker compose logs -f
 
-# Ejecutar tests
+# Run tests
 docker compose exec backend npm test
 
-# Ejecutar migraciones
+# Run migrations
 docker compose exec backend npx prisma migrate deploy
 
-# Acceder a base de datos
+# Access database
 docker compose exec postgres psql -U aiuser ai_team
 
-# Reiniciar un servicio
+# Restart a service
 docker compose restart backend
 
-# Ver uso de recursos
+# View resource usage
 docker stats
 ```
 
-### 💻 Sin Docker
+### 💻 Without Docker
 
 #### Running Tests
 ```bash
@@ -450,23 +448,17 @@ cd frontend
 npm run build
 ```
 
-### 🛠️ Scripts de Mantenimiento
+### 🛠️ Maintenance Scripts
 
 ```bash
-# Actualizar imágenes Docker
+# Update Docker images
 ./scripts/maintenance/update-images.sh
 
-# Verificar actualizaciones de dependencias
+# Check dependency updates
 ./scripts/maintenance/check-updates.sh
 
-# Limpiar recursos no utilizados
+# Clean unused resources
 ./scripts/maintenance/cleanup.sh
-
-# Backup de base de datos
-./scripts/prod/backup-db.sh
-
-# Health check
-./scripts/prod/health-check.sh
 ```
 
 ## Contributing

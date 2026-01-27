@@ -1,248 +1,248 @@
 # Troubleshooting Guide
 
-Guía de solución de problemas comunes al clonar y ejecutar el proyecto.
+Guide for solving common problems when cloning and running the project.
 
-## Problema: Base de datos sin tablas
+## Problem: Database without tables
 
-### Síntoma
-Al ejecutar `./scripts/dev/start-dev.sh`, el backend inicia pero no hay tablas en la base de datos.
+### Symptom
+When running `./scripts/dev/start-dev.sh`, the backend starts but there are no tables in the database.
 
-### Diagnóstico
+### Diagnosis
 ```bash
-# Verificar estado de la base de datos
+# Check database status
 ./scripts/dev/check-db.sh
 ```
 
-### Soluciones
+### Solutions
 
-#### Opción 1: Ejecutar migraciones manualmente
+#### Option 1: Run migrations manually
 ```bash
 docker compose exec backend npx prisma migrate deploy --schema=./src/prisma/schema.prisma
 ```
 
-#### Opción 2: Reiniciar el contenedor del backend
+#### Option 2: Restart the backend container
 ```bash
 docker compose restart backend
 docker compose logs -f backend
 ```
 
-#### Opción 3: Reset completo (⚠️ Borra todos los datos)
+#### Option 3: Complete reset (⚠️ Deletes all data)
 ```bash
 docker compose down -v
 docker compose up -d
 ```
 
-## Problema: Error "role does not exist"
+## Problem: Error "role does not exist"
 
-### Síntoma
-Error al conectar a PostgreSQL: `FATAL: role "xxx" does not exist`
+### Symptom
+Error when connecting to PostgreSQL: `FATAL: role "xxx" does not exist`
 
-### Solución
-1. Verifica que el archivo `.env` en la raíz del proyecto tiene las credenciales correctas:
+### Solution
+1. Verify that the `.env` file in the project root has the correct credentials:
    ```env
    DB_USER=ai_team
    DB_PASSWORD=ai_team_secer
    DB_NAME=ai_team_db
    ```
 
-2. Si cambiaste las credenciales, necesitas recrear los contenedores:
+2. If you changed the credentials, you need to recreate the containers:
    ```bash
    docker compose down -v
    docker compose up -d
    ```
 
-## Problema: Backend no responde
+## Problem: Backend not responding
 
-### Síntoma
-El contenedor backend está "Up" pero no responde en http://localhost:3000
+### Symptom
+The backend container is "Up" but doesn't respond at http://localhost:3000
 
-### Diagnóstico
+### Diagnosis
 ```bash
-# Ver logs del backend
+# View backend logs
 docker compose logs -f backend
 
-# Verificar estado del contenedor
+# Check container status
 docker compose ps
 ```
 
-### Posibles causas y soluciones
+### Possible causes and solutions
 
-#### 1. Migraciones fallando
+#### 1. Migrations failing
 ```bash
-# Ver logs específicos de migraciones
+# View specific migration logs
 docker compose logs backend | grep -i "prisma\|migration"
 
-# Ejecutar migraciones manualmente
+# Run migrations manually
 docker compose exec backend npx prisma migrate deploy --schema=./src/prisma/schema.prisma
 ```
 
-#### 2. Error en variables de entorno
+#### 2. Error in environment variables
 ```bash
-# Verificar que .env existe
+# Verify that .env exists
 ls -la .env
 
-# Si no existe, copiar desde template
+# If it doesn't exist, copy from template
 cp .env.example .env
 
-# Editar .env y configurar secretos
-vim .env  # o tu editor preferido
+# Edit .env and configure secrets
+vim .env  # or your preferred editor
 
-# Reiniciar contenedores
+# Restart containers
 docker compose restart
 ```
 
-#### 3. Puerto ocupado
+#### 3. Port occupied
 ```bash
-# Verificar si el puerto 3000 está ocupado
+# Check if port 3000 is occupied
 lsof -i :3000
 
-# Cambiar puerto en .env si es necesario
+# Change port in .env if necessary
 echo "BACKEND_PORT=3001" >> .env
 docker compose restart backend
 ```
 
-## Problema: Frontend no carga
+## Problem: Frontend not loading
 
-### Síntoma
-Vite inicia pero muestra errores al cargar la aplicación
+### Symptom
+Vite starts but shows errors when loading the application
 
-### Diagnóstico
+### Diagnosis
 ```bash
-# Ver logs del frontend
+# View frontend logs
 docker compose logs -f frontend
 
-# Verificar que Vite está sirviendo
+# Verify that Vite is serving
 curl http://localhost:5173
 ```
 
-### Soluciones
+### Solutions
 
-#### 1. Archivos de configuración faltantes
-El error puede indicar que falta `tsconfig.node.json` u otros archivos de config.
+#### 1. Missing configuration files
+The error may indicate that `tsconfig.node.json` or other config files are missing.
 
 ```bash
-# Verificar que todos los archivos de config existen
+# Verify that all config files exist
 ls -la frontend/tsconfig*.json frontend/vite.config.ts
 
-# Reiniciar frontend
+# Restart frontend
 docker compose restart frontend
 ```
 
-#### 2. Node modules corruptos
+#### 2. Corrupted node modules
 ```bash
-# Reconstruir imagen del frontend
+# Rebuild frontend image
 docker compose build frontend --no-cache
 docker compose up -d frontend
 ```
 
-## Problema: Cambios en código no se reflejan
+## Problem: Code changes not reflected
 
-### Síntoma
-Modificas archivos pero los cambios no aparecen en la aplicación
+### Symptom
+You modify files but changes don't appear in the application
 
-### Solución para Backend
+### Solution for Backend
 ```bash
-# Verificar que tsx watch está corriendo
+# Verify that tsx watch is running
 docker compose logs backend | grep "watch"
 
-# Si no está usando watch, reiniciar
+# If not using watch, restart
 docker compose restart backend
 ```
 
-### Solución para Frontend
+### Solution for Frontend
 ```bash
-# Verificar que Vite HMR está activo
+# Verify that Vite HMR is active
 docker compose logs frontend | grep "ready"
 
-# Reiniciar frontend
+# Restart frontend
 docker compose restart frontend
 ```
 
-## Comandos útiles
+## Useful commands
 
-### Ver logs en tiempo real
+### View logs in real-time
 ```bash
-# Todos los servicios
+# All services
 docker compose logs -f
 
-# Solo backend
+# Backend only
 docker compose logs -f backend
 
-# Solo frontend
+# Frontend only
 docker compose logs -f frontend
 
-# Solo PostgreSQL
+# PostgreSQL only
 docker compose logs -f postgres
 ```
 
-### Acceder a contenedores
+### Access containers
 ```bash
-# Shell en backend
+# Shell in backend
 docker compose exec backend sh
 
-# Shell en frontend
+# Shell in frontend
 docker compose exec frontend sh
 
-# Shell en PostgreSQL
+# Shell in PostgreSQL
 docker compose exec postgres psql -U ai_team -d ai_team_db
 ```
 
-### Limpieza completa
+### Complete cleanup
 ```bash
-# Detener y eliminar contenedores + volúmenes
+# Stop and remove containers + volumes
 docker compose down -v
 
-# Eliminar imágenes también
+# Remove images as well
 docker compose down -v --rmi all
 
-# Reconstruir desde cero
+# Rebuild from scratch
 docker compose build --no-cache
 docker compose up -d
 ```
 
-### Verificar estado general
+### Check general status
 ```bash
-# Estado de contenedores
+# Container status
 docker compose ps
 
-# Uso de recursos
+# Resource usage
 docker stats
 
-# Verificar redes
+# Check networks
 docker network ls | grep ai-team
 
-# Verificar volúmenes
+# Check volumes
 docker volume ls | grep ai-team
 ```
 
-## Requisitos previos
+## Prerequisites
 
-Asegúrate de tener instalado:
-- Docker Desktop (o Docker Engine + Docker Compose)
+Make sure you have installed:
+- Docker Desktop (or Docker Engine + Docker Compose)
 - Git
-- Un editor de texto
+- A text editor
 
-Versiones recomendadas:
+Recommended versions:
 - Docker: >= 24.0
 - Docker Compose: >= 2.20
 
-## ¿Necesitas más ayuda?
+## Need more help?
 
-Si ninguna de estas soluciones funciona:
+If none of these solutions work:
 
-1. Revisa los logs completos:
+1. Review the complete logs:
    ```bash
    docker compose logs > logs.txt
    ```
 
-2. Verifica tu configuración:
+2. Verify your configuration:
    ```bash
    cat .env
    docker compose config
    ```
 
-3. Abre un issue en GitHub con:
-   - Sistema operativo y versión
-   - Versión de Docker
-   - Logs completos
-   - Pasos exactos que seguiste
+3. Open an issue on GitHub with:
+   - Operating system and version
+   - Docker version
+   - Complete logs
+   - Exact steps you followed

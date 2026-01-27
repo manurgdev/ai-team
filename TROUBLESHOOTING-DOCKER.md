@@ -1,310 +1,310 @@
-# 🔧 Troubleshooting Docker - AI Team
+# 🔧 Docker Troubleshooting - AI Team
 
-Guía completa para resolver problemas comunes con Docker y la aplicación AI Team.
+Complete guide for solving common problems with Docker and the AI Team application.
 
-## 📋 Tabla de Contenidos
+## 📋 Table of Contents
 
-1. [Problemas de Inicio](#problemas-de-inicio)
-2. [Problemas de Red y Conectividad](#problemas-de-red-y-conectividad)
-3. [Problemas de Base de Datos](#problemas-de-base-de-datos)
-4. [Problemas de Construcción](#problemas-de-construcción)
-5. [Problemas de Rendimiento](#problemas-de-rendimiento)
-6. [Problemas de Volúmenes](#problemas-de-volúmenes)
-7. [Problemas de Permisos](#problemas-de-permisos)
-8. [Problemas Específicos de la Aplicación](#problemas-específicos-de-la-aplicación)
-9. [Herramientas de Diagnóstico](#herramientas-de-diagnóstico)
+1. [Startup Problems](#startup-problems)
+2. [Network and Connectivity Problems](#network-and-connectivity-problems)
+3. [Database Problems](#database-problems)
+4. [Build Problems](#build-problems)
+5. [Performance Problems](#performance-problems)
+6. [Volume Problems](#volume-problems)
+7. [Permission Problems](#permission-problems)
+8. [Application-Specific Problems](#application-specific-problems)
+9. [Diagnostic Tools](#diagnostic-tools)
 10. [FAQ](#faq)
 
-## 🚀 Problemas de Inicio
+## 🚀 Startup Problems
 
 ### Error: "Cannot connect to Docker daemon"
 
-**Síntoma:**
+**Symptom:**
 ```
 Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
 ```
 
-**Causa:** Docker no está ejecutándose
+**Cause:** Docker is not running
 
-**Solución:**
+**Solution:**
 ```bash
 # Linux
 sudo systemctl start docker
 sudo systemctl enable docker
 
 # macOS
-# Abrir Docker Desktop
+# Open Docker Desktop
 
-# Verificar
+# Verify
 docker ps
 ```
 
 ### Error: "Service already running"
 
-**Síntoma:**
+**Symptom:**
 ```
 ERROR: service "backend" is already running
 ```
 
-**Causa:** Contenedores ya están ejecutándose
+**Cause:** Containers are already running
 
-**Solución:**
+**Solution:**
 ```bash
-# Ver contenedores activos
+# View active containers
 docker compose ps
 
-# Detener todos
+# Stop all
 docker compose down
 
-# Iniciar de nuevo
+# Start again
 docker compose up -d
 ```
 
 ### Error: "Port is already allocated"
 
-**Síntoma:**
+**Symptom:**
 ```
 Error starting userland proxy: listen tcp4 0.0.0.0:80: bind: address already in use
 ```
 
-**Causa:** Puerto ya está en uso por otro proceso
+**Cause:** Port is already in use by another process
 
-**Solución:**
+**Solution:**
 ```bash
-# Identificar qué usa el puerto
+# Identify what's using the port
 lsof -i :80
 lsof -i :3000
 lsof -i :5432
 
-# Opción 1: Detener el proceso conflictivo
+# Option 1: Stop the conflicting process
 sudo kill -9 <PID>
 
-# Opción 2: Cambiar puertos en .env
+# Option 2: Change ports in .env
 nano .env
-# Cambia:
+# Change:
 FRONTEND_PORT=8080
 BACKEND_PORT=3001
 DB_PORT=5433
 
-# Reiniciar servicios
+# Restart services
 docker compose down
 docker compose up -d
 ```
 
 ### Error: "Container exits immediately"
 
-**Síntoma:** Contenedor se inicia y termina enseguida
+**Symptom:** Container starts and exits right away
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# Ver logs
+# View logs
 docker compose logs backend
 docker compose logs -f backend
 
-# Ver código de salida
+# View exit code
 docker inspect ai-team-backend --format='{{.State.ExitCode}}'
 
-# Códigos comunes:
-# 0 - Salida normal (inusual para servicios)
-# 1 - Error de aplicación
-# 137 - Killed por OOM (sin memoria)
+# Common codes:
+# 0 - Normal exit (unusual for services)
+# 1 - Application error
+# 137 - Killed by OOM (out of memory)
 # 139 - Segmentation fault
-# 143 - Terminado con SIGTERM
+# 143 - Terminated with SIGTERM
 ```
 
-**Soluciones comunes:**
+**Common solutions:**
 ```bash
-# 1. Variable de entorno faltante
-docker compose config  # Verificar configuración
+# 1. Missing environment variable
+docker compose config  # Verify configuration
 
-# 2. Problema con comando de inicio
+# 2. Problem with startup command
 docker compose exec backend sh
-# Ejecutar comando manualmente para ver error
+# Run command manually to see error
 
-# 3. Falta alguna dependencia
+# 3. Missing dependency
 docker compose build --no-cache backend
 ```
 
 ### Error: "Unhealthy" status
 
-**Síntoma:**
+**Symptom:**
 ```bash
 docker compose ps
-# Muestra: postgres (unhealthy)
+# Shows: postgres (unhealthy)
 ```
 
-**Solución:**
+**Solution:**
 ```bash
-# Ver logs detallados
+# View detailed logs
 docker compose logs postgres
 
-# Ver detalles del healthcheck
+# View healthcheck details
 docker inspect ai-team-postgres --format='{{json .State.Health}}' | jq
 
-# Esperar más tiempo (puede tomar 30-60 segundos)
+# Wait longer (may take 30-60 seconds)
 watch -n 2 'docker compose ps'
 
-# Si persiste, recrear contenedor
+# If it persists, recreate container
 docker compose down
-docker volume rm ai-team_postgres_data  # ⚠️ Borra datos
+docker volume rm ai-team_postgres_data  # ⚠️ Deletes data
 docker compose up -d
 ```
 
-## 🌐 Problemas de Red y Conectividad
+## 🌐 Network and Connectivity Problems
 
-### Frontend no puede conectar con Backend
+### Frontend cannot connect to Backend
 
-**Síntoma:** Errores CORS o "Failed to fetch" en navegador
+**Symptom:** CORS errors or "Failed to fetch" in browser
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# 1. Verificar que backend está corriendo
+# 1. Verify backend is running
 curl http://localhost:3000/api/health
 
-# 2. Verificar variables de entorno
+# 2. Verify environment variables
 docker compose exec frontend env | grep VITE_API_URL
 docker compose exec backend env | grep ALLOWED_ORIGINS
 
-# 3. Ver logs del backend
+# 3. View backend logs
 docker compose logs -f backend | grep CORS
 ```
 
-**Soluciones:**
+**Solutions:**
 
-**Problema 1: VITE_API_URL incorrecto**
+**Problem 1: Incorrect VITE_API_URL**
 ```bash
-# Verificar .env
+# Check .env
 cat .env | grep VITE_API_URL
 
-# Debe ser:
-VITE_API_URL=http://localhost:3000/api  # Desarrollo local
-# o
-VITE_API_URL=https://tudominio.com/api  # Producción
+# Should be:
+VITE_API_URL=http://localhost:3000/api  # Local development
+# or
+VITE_API_URL=https://yourdomain.com/api  # Production
 
-# Reconstruir frontend si cambias esto
+# Rebuild frontend if you change this
 docker compose build frontend
 docker compose up -d frontend
 ```
 
-**Problema 2: CORS no permite origen**
+**Problem 2: CORS not allowing origin**
 ```bash
-# Verificar ALLOWED_ORIGINS en .env
+# Check ALLOWED_ORIGINS in .env
 cat .env | grep ALLOWED_ORIGINS
 
-# Debe incluir el origen del frontend
+# Should include frontend origin
 ALLOWED_ORIGINS=http://localhost,http://localhost:5173
 
-# Reiniciar backend
+# Restart backend
 docker compose restart backend
 ```
 
-**Problema 3: Red de Docker aislada**
+**Problem 3: Docker network isolated**
 ```bash
-# Verificar que servicios están en misma red
+# Verify services are in same network
 docker network inspect ai-team_ai-team-network
 
-# Debería mostrar frontend, backend, postgres
+# Should show frontend, backend, postgres
 
-# Si no, recrear:
+# If not, recreate:
 docker compose down
 docker compose up -d
 ```
 
-### Backend no puede conectar con PostgreSQL
+### Backend cannot connect to PostgreSQL
 
-**Síntoma:**
+**Symptom:**
 ```
 Error: P1001: Can't reach database server at postgres:5432
 ```
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# 1. Verificar que postgres está healthy
+# 1. Verify postgres is healthy
 docker compose ps
 
-# 2. Ver logs de postgres
+# 2. View postgres logs
 docker compose logs postgres
 
-# 3. Verificar DATABASE_URL
+# 3. Check DATABASE_URL
 docker compose exec backend sh -c 'echo $DATABASE_URL'
 
-# 4. Probar conectividad
+# 4. Test connectivity
 docker compose exec backend ping postgres
 docker compose exec backend nc -zv postgres 5432
 ```
 
-**Soluciones:**
+**Solutions:**
 
-**Problema 1: PostgreSQL no está listo**
+**Problem 1: PostgreSQL not ready**
 ```bash
-# Esperar a que esté healthy (puede tomar 20-30s)
+# Wait until it's healthy (may take 20-30s)
 watch -n 2 'docker compose ps'
 
-# Ver healthcheck
+# View healthcheck
 docker compose logs postgres | grep "database system is ready"
 ```
 
-**Problema 2: DATABASE_URL incorrecto**
+**Problem 2: Incorrect DATABASE_URL**
 ```bash
-# Debe usar nombre del servicio "postgres", no "localhost"
-# ❌ MAL:
+# Must use service name "postgres", not "localhost"
+# ❌ WRONG:
 DATABASE_URL=postgresql://aiuser:pass@localhost:5432/ai_team
 
-# ✅ BIEN:
+# ✅ CORRECT:
 DATABASE_URL=postgresql://aiuser:pass@postgres:5432/ai_team
 
-# O usar variables:
+# Or use variables:
 DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
 ```
 
-**Problema 3: Orden de inicio**
+**Problem 3: Startup order**
 ```bash
-# Backend debe esperar a postgres
-# Verificar depends_on en docker-compose.yml
+# Backend must wait for postgres
+# Check depends_on in docker-compose.yml
 
-# Reiniciar en orden correcto
+# Restart in correct order
 docker compose down
 docker compose up -d postgres
-# Esperar 20 segundos
+# Wait 20 seconds
 docker compose up -d backend frontend
 ```
 
-### DNS no resuelve nombres de servicios
+### DNS doesn't resolve service names
 
-**Síntoma:** `ping: postgres: Name or service not known`
+**Symptom:** `ping: postgres: Name or service not known`
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar red
+# Check network
 docker network ls
 docker network inspect ai-team_ai-team-network
 
-# Recrear red
+# Recreate network
 docker compose down
 docker network prune
 docker compose up -d
 ```
 
-## 🗄️ Problemas de Base de Datos
+## 🗄️ Database Problems
 
 ### Error: "relation does not exist"
 
-**Síntoma:**
+**Symptom:**
 ```
 ERROR: relation "User" does not exist
 ```
 
-**Causa:** Migraciones de Prisma no se han ejecutado
+**Cause:** Prisma migrations haven't been executed
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar estado de migraciones
+# Check migration status
 docker compose exec backend npx prisma migrate status --schema=./src/prisma/schema.prisma
 
-# Ejecutar migraciones pendientes
+# Execute pending migrations
 docker compose exec backend npx prisma migrate deploy --schema=./src/prisma/schema.prisma
 
-# Si persiste, reset completo (⚠️ borra datos)
+# If it persists, complete reset (⚠️ deletes data)
 docker compose down
 docker volume rm ai-team_postgres_data
 docker compose up -d
@@ -312,66 +312,66 @@ docker compose up -d
 
 ### Error: "password authentication failed"
 
-**Síntoma:**
+**Symptom:**
 ```
 FATAL: password authentication failed for user "aiuser"
 ```
 
-**Causa:** Contraseña en DATABASE_URL no coincide con DB_PASSWORD
+**Cause:** Password in DATABASE_URL doesn't match DB_PASSWORD
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar variables
+# Check variables
 cat .env | grep DB_
 cat .env | grep DATABASE_URL
 
-# DB_PASSWORD y DATABASE_URL deben coincidir
+# DB_PASSWORD and DATABASE_URL must match
 
-# Si cambiaste password, recrear contenedor postgres
+# If you changed password, recreate postgres container
 docker compose down
 docker volume rm ai-team_postgres_data
 docker compose up -d
 ```
 
-### PostgreSQL se queda sin memoria
+### PostgreSQL runs out of memory
 
-**Síntoma:**
+**Symptom:**
 ```
 FATAL: out of memory
 ```
 
-**Solución:**
+**Solution:**
 ```bash
-# Ver uso de memoria
+# View memory usage
 docker stats ai-team-postgres
 
-# Aumentar límite en docker-compose.prod.yml
+# Increase limit in docker-compose.prod.yml
 services:
   postgres:
     deploy:
       resources:
         limits:
-          memory: 2G  # Aumentar
+          memory: 2G  # Increase
 
-# Aplicar cambios
+# Apply changes
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-### Locks en base de datos
+### Database locks
 
-**Síntoma:** Queries muy lentos, timeouts
+**Symptom:** Very slow queries, timeouts
 
-**Diagnóstico:**
+**Diagnosis:**
 ```sql
--- Conectar a DB
+-- Connect to DB
 docker compose exec postgres psql -U aiuser ai_team
 
--- Ver locks activos
+-- View active locks
 SELECT pid, usename, query, state
 FROM pg_stat_activity
 WHERE state != 'idle';
 
--- Ver locks bloqueantes
+-- View blocking locks
 SELECT
   blocked_locks.pid AS blocked_pid,
   blocked_activity.usename AS blocked_user,
@@ -396,119 +396,101 @@ JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = bl
 WHERE NOT blocked_locks.granted;
 ```
 
-**Solución:**
+**Solution:**
 ```sql
--- Terminar proceso bloqueante (cuidado!)
+-- Terminate blocking process (careful!)
 SELECT pg_terminate_backend(<blocking_pid>);
 
--- O reiniciar postgres
+-- Or restart postgres
 -- docker compose restart postgres
 ```
 
-### Corrupción de datos
-
-**Síntoma:** Errores extraños, datos inconsistentes
-
-**Solución:**
-```bash
-# 1. Verificar integridad
-docker compose exec postgres psql -U aiuser ai_team -c "REINDEX DATABASE ai_team;"
-
-# 2. Restaurar desde backup
-./scripts/prod/restore-db.sh /home/deploy/backups/backup_YYYYMMDD.sql.gz
-
-# 3. Último recurso: reset completo
-docker compose down -v
-docker compose up -d
-# Ejecutará migraciones desde cero
-```
-
-## 🔨 Problemas de Construcción
+## 🔨 Build Problems
 
 ### Error: "COPY failed"
 
-**Síntoma:**
+**Symptom:**
 ```
 COPY failed: file not found in build context
 ```
 
-**Causa:** Archivo referenciado en Dockerfile no existe o está en .dockerignore
+**Cause:** File referenced in Dockerfile doesn't exist or is in .dockerignore
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar que archivos existen
+# Verify files exist
 ls -la backend/package.json
 ls -la frontend/package.json
 
-# Verificar .dockerignore
+# Check .dockerignore
 cat .dockerignore
 
-# Reconstruir sin caché
+# Rebuild without cache
 docker compose build --no-cache
 ```
 
 ### Error: "npm install failed"
 
-**Síntoma:**
+**Symptom:**
 ```
 npm ERR! code ENOTFOUND
 npm ERR! errno ENOTFOUND
 ```
 
-**Causa:** Sin conexión a internet o proxy mal configurado
+**Cause:** No internet connection or misconfigured proxy
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar conexión
+# Check connection
 ping registry.npmjs.org
 
-# Si usas proxy corporativo
+# If using corporate proxy
 docker build --build-arg HTTP_PROXY=http://proxy:8080 \
              --build-arg HTTPS_PROXY=http://proxy:8080 \
              backend/
 
-# Limpiar caché npm
+# Clean npm cache
 docker compose build --no-cache --build-arg NPM_CONFIG_CACHE=/tmp/npm-cache
 ```
 
-### "Layer does not exist" o "No space left on device"
+### "Layer does not exist" or "No space left on device"
 
-**Síntoma:** Error al construir imágenes
+**Symptom:** Error when building images
 
-**Solución:**
+**Solution:**
 ```bash
-# Ver espacio usado
+# View space used
 docker system df
 
-# Limpiar imágenes no utilizadas
+# Clean unused images
 docker image prune -a
 
-# Limpiar todo (⚠️ cuidado)
+# Clean everything (⚠️ careful)
 docker system prune -a --volumes
 
-# Aumentar espacio de Docker Desktop (macOS/Windows)
+# Increase Docker Desktop space (macOS/Windows)
 # Settings → Resources → Disk image size
 ```
 
-## ⚡ Problemas de Rendimiento
+## ⚡ Performance Problems
 
-### Contenedores muy lentos
+### Very slow containers
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# Ver uso de recursos
+# View resource usage
 docker stats
 
-# Ver procesos dentro del contenedor
+# View processes inside container
 docker compose exec backend top
 
-# Ver I/O
+# View I/O
 docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.BlockIO}}"
 ```
 
-**Soluciones:**
+**Solutions:**
 
-**1. Aumentar recursos:**
+**1. Increase resources:**
 ```yaml
 # docker-compose.prod.yml
 services:
@@ -523,219 +505,219 @@ services:
           memory: 1G
 ```
 
-**2. Optimizar queries de BD:**
+**2. Optimize DB queries:**
 ```bash
-# Ver queries lentas
+# View slow queries
 docker compose exec postgres psql -U aiuser ai_team -c "
 SELECT query, mean_exec_time, calls
 FROM pg_stat_statements
 ORDER BY mean_exec_time DESC
 LIMIT 10;"
 
-# Analizar query específica
+# Analyze specific query
 docker compose exec postgres psql -U aiuser ai_team -c "
 EXPLAIN ANALYZE SELECT * FROM \"User\";"
 ```
 
-**3. Caché de Docker:**
+**3. Docker cache:**
 ```bash
-# En macOS, usa VirtioFS en lugar de gRPC FUSE
+# On macOS, use VirtioFS instead of gRPC FUSE
 # Docker Desktop → Settings → Experimental Features → VirtioFS
 ```
 
-### Build muy lento
+### Very slow build
 
-**Solución:**
+**Solution:**
 ```bash
-# Usar BuildKit (más rápido)
+# Use BuildKit (faster)
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 
-# Construir
+# Build
 docker compose build
 
-# Usar caché de layers
+# Use layer cache
 docker compose build --build-arg BUILDKIT_INLINE_CACHE=1
 ```
 
-### Alto uso de CPU/memoria
+### High CPU/memory usage
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# Ver top processes
+# View top processes
 docker compose exec backend ps aux --sort=-%cpu | head
 
-# Ver uso de memoria
+# View memory usage
 docker compose exec backend free -h
 ```
 
-**Solución:**
+**Solution:**
 ```bash
-# Limitar recursos
-# Ver sección anterior sobre resource limits
+# Limit resources
+# See previous section on resource limits
 
-# Reiniciar contenedor
+# Restart container
 docker compose restart backend
 
-# Verificar memory leaks en aplicación
+# Check for memory leaks in application
 docker compose exec backend node --max-old-space-size=512 dist/server.js
 ```
 
-## 💾 Problemas de Volúmenes
+## 💾 Volume Problems
 
-### Datos no persisten
+### Data doesn't persist
 
-**Síntoma:** Datos se pierden al reiniciar
+**Symptom:** Data is lost on restart
 
-**Causa:** Volumen no está configurado o se elimina
+**Cause:** Volume not configured or deleted
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar volúmenes
+# Check volumes
 docker volume ls
 docker volume inspect ai-team_postgres_data
 
-# NO usar -v al detener (elimina volúmenes)
-docker compose down       # ✅ Mantiene datos
-docker compose down -v    # ❌ Elimina datos
+# DO NOT use -v when stopping (removes volumes)
+docker compose down       # ✅ Keeps data
+docker compose down -v    # ❌ Deletes data
 
-# Recrear volumen solo si es necesario
+# Recreate volume only if necessary
 docker volume create ai-team_postgres_data
 ```
 
-### Volumen lleno
+### Volume full
 
-**Síntoma:**
+**Symptom:**
 ```
 ERROR: No space left on device
 ```
 
-**Solución:**
+**Solution:**
 ```bash
-# Ver tamaño de volumen
+# View volume size
 docker system df -v
 
-# Limpiar datos antiguos en BD
+# Clean old data in DB
 docker compose exec postgres psql -U aiuser ai_team -c "VACUUM FULL;"
 
-# Eliminar logs antiguos
+# Delete old logs
 docker compose exec backend find /app/logs -mtime +7 -delete
 
-# Aumentar espacio de disco del host
+# Increase host disk space
 ```
 
-### Permisos incorrectos en volumen
+### Incorrect permissions on volume
 
-**Síntoma:** Permission denied al escribir
+**Symptom:** Permission denied when writing
 
-**Solución:**
+**Solution:**
 ```bash
-# Ver permisos
+# View permissions
 docker compose exec backend ls -la /app
 
-# Cambiar owner (como root)
+# Change owner (as root)
 docker compose exec -u root backend chown -R nodejs:nodejs /app
 
-# O recrear volumen con permisos correctos
+# Or recreate volume with correct permissions
 docker compose down
-docker volume rm <volumen>
+docker volume rm <volume>
 docker compose up -d
 ```
 
-## 🔐 Problemas de Permisos
+## 🔐 Permission Problems
 
-### "Permission denied" al ejecutar comandos
+### "Permission denied" when executing commands
 
-**Solución:**
+**Solution:**
 ```bash
-# Ejecutar como root
+# Execute as root
 docker compose exec -u root backend sh
 
-# Agregar usuario a grupo docker (Linux)
+# Add user to docker group (Linux)
 sudo usermod -aG docker $USER
-# Logout y login para aplicar
+# Logout and login to apply
 
-# Cambiar permisos de socket (Linux)
+# Change socket permissions (Linux)
 sudo chmod 666 /var/run/docker.sock
 ```
 
-### "Operation not permitted" en contenedor
+### "Operation not permitted" in container
 
-**Solución:**
+**Solution:**
 ```bash
-# Agregar capabilities necesarias
+# Add necessary capabilities
 # docker-compose.yml
 services:
   backend:
     cap_add:
-      - SYS_ADMIN  # Solo si realmente necesitas
+      - SYS_ADMIN  # Only if you really need it
 ```
 
-## 🐛 Problemas Específicos de la Aplicación
+## 🐛 Application-Specific Problems
 
-### JWT Token inválido
+### Invalid JWT Token
 
-**Síntoma:** 401 Unauthorized en todas las requests
+**Symptom:** 401 Unauthorized on all requests
 
-**Causa:** JWT_SECRET cambió o tokens expirados
+**Cause:** JWT_SECRET changed or expired tokens
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar JWT_SECRET no cambió
+# Verify JWT_SECRET didn't change
 docker compose exec backend sh -c 'echo $JWT_SECRET'
 
-# Si cambió, usuarios deben re-login
-# Si persiste, verificar código de validación
+# If it changed, users must re-login
+# If it persists, check validation code
 
-# Ver logs
+# View logs
 docker compose logs backend | grep JWT
 ```
 
 ### Encryption/Decryption errors
 
-**Síntoma:** "Decryption failed" al obtener API keys
+**Symptom:** "Decryption failed" when getting API keys
 
-**Causa:** ENCRYPTION_SECRET cambió o no tiene 32 caracteres
+**Cause:** ENCRYPTION_SECRET changed or doesn't have 32 characters
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar longitud (debe ser exactamente 32)
+# Check length (must be exactly 32)
 docker compose exec backend sh -c 'echo -n $ENCRYPTION_SECRET | wc -c'
 
-# Si cambió, API keys antiguas NO se pueden recuperar
-# Usuarios deben re-configurar API keys
+# If it changed, old API keys CANNOT be recovered
+# Users must re-configure API keys
 ```
 
 ### AI Provider APIs failing
 
-**Síntoma:** Errores al ejecutar tareas con agents
+**Symptom:** Errors when executing tasks with agents
 
-**Diagnóstico:**
+**Diagnosis:**
 ```bash
-# Ver logs
+# View logs
 docker compose logs backend | grep -i anthropic
 docker compose logs backend | grep -i openai
 
-# Probar conectividad
+# Test connectivity
 docker compose exec backend curl https://api.anthropic.com
 docker compose exec backend curl https://api.openai.com
 
-# Verificar API keys (no reveles el valor!)
+# Check API keys (don't reveal value!)
 docker compose exec backend sh -c 'test -n "$ANTHROPIC_API_KEY" && echo "Set" || echo "Not set"'
 ```
 
-**Solución:**
-- Verificar API key es válida
-- Verificar cuota/límites de API
-- Verificar firewall no bloquea requests salientes
+**Solution:**
+- Verify API key is valid
+- Check API quota/limits
+- Verify firewall doesn't block outgoing requests
 
 ### Server-Sent Events (SSE) not working
 
-**Síntoma:** No se ven updates en tiempo real
+**Symptom:** No real-time updates visible
 
-**Causa:** Nginx o proxy buffer SSE
+**Cause:** Nginx or proxy buffering SSE
 
-**Solución:**
+**Solution:**
 
 **Nginx:**
 ```nginx
@@ -743,47 +725,47 @@ location /api/agents/execute-stream {
     proxy_pass http://backend:3000;
     proxy_http_version 1.1;
     proxy_set_header Connection "";
-    proxy_buffering off;  # IMPORTANTE para SSE
+    proxy_buffering off;  # IMPORTANT for SSE
     proxy_cache off;
     proxy_read_timeout 300s;
 }
 ```
 
-**Docker:** Ya configurado correctamente
+**Docker:** Already configured correctly
 
-## 🔧 Herramientas de Diagnóstico
+## 🔧 Diagnostic Tools
 
-### Script de diagnóstico completo
+### Complete diagnostic script
 
 ```bash
 #!/bin/bash
 # diagnostico.sh
 
-echo "=== AI Team - Diagnóstico Docker ==="
+echo "=== AI Team - Docker Diagnostics ==="
 echo ""
 
-echo "1. Versiones:"
+echo "1. Versions:"
 docker --version
 docker compose version
 echo ""
 
-echo "2. Estado de servicios:"
+echo "2. Service status:"
 docker compose ps
 echo ""
 
-echo "3. Uso de recursos:"
+echo "3. Resource usage:"
 docker stats --no-stream
 echo ""
 
-echo "4. Volúmenes:"
+echo "4. Volumes:"
 docker volume ls | grep ai-team
 echo ""
 
-echo "5. Redes:"
+echo "5. Networks:"
 docker network ls | grep ai-team
 echo ""
 
-echo "6. Logs recientes (últimas 50 líneas):"
+echo "6. Recent logs (last 50 lines):"
 echo "--- Backend ---"
 docker compose logs --tail=50 backend
 echo ""
@@ -803,18 +785,18 @@ echo "PostgreSQL:"
 docker compose exec postgres pg_isready -U aiuser
 echo ""
 
-echo "8. Variables de entorno (sin valores sensibles):"
+echo "8. Environment variables (without sensitive values):"
 echo "Backend:"
 docker compose exec backend env | grep -E "NODE_ENV|PORT|ALLOWED_ORIGINS" | sort
 echo "Frontend:"
 docker compose exec frontend env | grep VITE_ | sort
 echo ""
 
-echo "9. Espacio en disco:"
+echo "9. Disk space:"
 docker system df
 echo ""
 
-echo "=== Fin del diagnóstico ==="
+echo "=== End of diagnostics ==="
 ```
 
 ```bash
@@ -822,119 +804,119 @@ chmod +x diagnostico.sh
 ./diagnostico.sh > diagnostico_$(date +%Y%m%d_%H%M%S).txt
 ```
 
-### Comandos útiles de diagnóstico
+### Useful diagnostic commands
 
 ```bash
-# Ver configuración efectiva de docker-compose
+# View effective docker-compose configuration
 docker compose config
 
-# Inspeccionar contenedor
+# Inspect container
 docker inspect ai-team-backend | jq
 
-# Ver logs con timestamps
+# View logs with timestamps
 docker compose logs -f -t backend
 
-# Ver últimas 100 líneas
+# View last 100 lines
 docker compose logs --tail=100 backend
 
-# Buscar en logs
+# Search in logs
 docker compose logs backend | grep -i error
 docker compose logs backend | grep -i "status code"
 
-# Ver procesos en contenedor
+# View processes in container
 docker compose exec backend ps aux
 
-# Ver puertos expuestos
+# View exposed ports
 docker compose port backend 3000
 docker compose port frontend 80
 
-# Ver IPs de contenedores
+# View container IPs
 docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ai-team-backend
 
-# Probar conectividad entre servicios
+# Test connectivity between services
 docker compose exec frontend ping -c 3 backend
 docker compose exec backend ping -c 3 postgres
 
-# Ver logs del Docker daemon (Linux)
+# View Docker daemon logs (Linux)
 journalctl -u docker -f
 ```
 
 ## ❓ FAQ
 
-### ¿Por qué mi contenedor se reinicia continuamente?
+### Why is my container restarting continuously?
 
-Ver logs con `docker compose logs -f <servicio>`. Comunes:
-- Variable de entorno faltante
-- Puerto ya en uso
-- Servicio dependiente no disponible
-- Falta archivo requerido
+View logs with `docker compose logs -f <service>`. Common causes:
+- Missing environment variable
+- Port already in use
+- Dependent service not available
+- Required file missing
 
-### ¿Cómo actualizo una imagen base?
+### How do I update a base image?
 
 ```bash
-# Rebuild con --pull
+# Rebuild with --pull
 docker compose build --pull
 
-# O manual
+# Or manual
 docker pull node:20-alpine
 docker pull postgres:15-alpine
 docker compose build --no-cache
 docker compose up -d
 ```
 
-### ¿Cómo limpio Docker completamente?
+### How do I clean Docker completely?
 
 ```bash
-# Detener todo
+# Stop everything
 docker compose down -v
 
-# Eliminar todo (⚠️ CUIDADO)
+# Remove everything (⚠️ CAREFUL)
 docker system prune -a --volumes
 
-# Verificar
-docker ps -a  # No debería mostrar nada
-docker images  # No debería mostrar nada
-docker volume ls  # No debería mostrar nada
+# Verify
+docker ps -a  # Should show nothing
+docker images  # Should show nothing
+docker volume ls  # Should show nothing
 ```
 
-### ¿Cómo migro datos a nuevo servidor?
+### How do I migrate data to a new server?
 
 ```bash
-# Servidor origen
+# Source server
 docker compose exec postgres pg_dump -U aiuser ai_team | gzip > backup.sql.gz
 
-# Copiar a nuevo servidor
-scp backup.sql.gz user@nuevo-servidor:/tmp/
+# Copy to new server
+scp backup.sql.gz user@new-server:/tmp/
 
-# Servidor destino
+# Destination server
 docker compose up -d postgres
-# Esperar a que esté ready
+# Wait until ready
 gunzip -c /tmp/backup.sql.gz | docker compose exec -T postgres psql -U aiuser ai_team
 docker compose up -d
 ```
 
-### ¿Cómo debug un contenedor que no inicia?
+### How do I debug a container that won't start?
 
 ```bash
-# Ver logs detallados
+# View detailed logs
 docker compose logs -f backend
 
-# Entrar y ejecutar comando manualmente
+# Enter and execute command manually
 docker compose run --rm --entrypoint sh backend
-# Dentro del contenedor:
-npm start  # Ver error directo
+# Inside container:
+npm start  # View direct error
 
-# Override command temporalmente
+# Override command temporarily
 docker compose run --rm --entrypoint sh backend -c "npm run debug"
 ```
 
-### ¿Por qué el build ignora cambios de código?
+### Why does the build ignore code changes?
 
 ```bash
-# Rebuild sin caché
+# Rebuild without cache
 docker compose build --no-cache backend
 
-# O eliminar imagen y rebuil
+# Or remove image and rebuild
 docker rmi ai-team-backend
 docker compose build backend
 docker compose up -d backend
@@ -942,14 +924,14 @@ docker compose up -d backend
 
 ---
 
-## 📚 Más Recursos
+## 📚 More Resources
 
-- [README-DOCKER.md](./README-DOCKER.md) - Guía principal de Docker
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - Despliegue en producción
-- [SECURITY-DOCKER.md](./SECURITY-DOCKER.md) - Seguridad
+- [README-DOCKER.md](./README-DOCKER.md) - Main Docker guide
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment
+- [SECURITY-DOCKER.md](./SECURITY-DOCKER.md) - Security
 - [Docker Documentation](https://docs.docker.com/)
 - [Docker Compose Troubleshooting](https://docs.docker.com/compose/faq/)
 
 ---
 
-**Si encuentras un problema no documentado aquí, por favor abre un issue en el repositorio. 🐛**
+**If you find a problem not documented here, please open an issue in the repository. 🐛**

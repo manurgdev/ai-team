@@ -1,134 +1,134 @@
-# 🐳 Guía Completa de Docker - AI Team
+# 🐳 Complete Docker Guide - AI Team
 
-Esta guía cubre todo lo necesario para ejecutar la aplicación AI Team usando Docker, desde desarrollo local hasta preparación para producción.
+This guide covers everything needed to run the AI Team application using Docker, from local development to production preparation.
 
-## 📋 Tabla de Contenidos
+## 📋 Table of Contents
 
-1. [Arquitectura](#arquitectura)
-2. [Requisitos Previos](#requisitos-previos)
-3. [Configuración Inicial](#configuración-inicial)
-4. [Desarrollo Local](#desarrollo-local)
-5. [Gestión de Base de Datos](#gestión-de-base-de-datos)
-6. [Comandos Útiles](#comandos-útiles)
-7. [Solución de Problemas](#solución-de-problemas)
+1. [Architecture](#architecture)
+2. [Prerequisites](#prerequisites)
+3. [Initial Configuration](#initial-configuration)
+4. [Local Development](#local-development)
+5. [Database Management](#database-management)
+6. [Useful Commands](#useful-commands)
+7. [Troubleshooting](#troubleshooting)
 
-## 🏗️ Arquitectura
+## 🏗️ Architecture
 
-La aplicación AI Team está completamente dockerizada con la siguiente arquitectura:
+The AI Team application is fully dockerized with the following architecture:
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   Docker Host                        │
 │                                                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
-│  │   Frontend   │  │   Backend    │  │ PostgreSQL│ │
-│  │              │  │              │  │           │ │
-│  │ React + Vite │◄─┤ Node.js +    │◄─┤ Database  │ │
-│  │ + Nginx      │  │ Express +    │  │ (Port     │ │
-│  │ (Port 80)    │  │ TypeScript   │  │  5432)    │ │
-│  │              │  │ (Port 3000)  │  │           │ │
-│  └──────────────┘  └──────────────┘  └───────────┘ │
-│         │                 │                 │       │
-│         └─────────────────┴─────────────────┘       │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐   │
+│  │   Frontend   │  │   Backend    │  │ PostgreSQL│   │
+│  │              │  │              │  │           │   │
+│  │ React + Vite │◄─┤ Node.js +    │◄─┤ Database  │   │
+│  │ + Nginx      │  │ Express +    │  │ (Port     │   │
+│  │ (Port 5173)  │  │ TypeScript   │  │  5432)    │   │
+│  │              │  │ (Port 3000)  │  │           │   │
+│  └──────────────┘  └──────────────┘  └───────────┘   │
+│         │                 │                 │        │
+│         └─────────────────┴─────────────────┘        │
 │                 ai-team-network                      │
 │                  (Bridge Network)                    │
 │                                                      │
-│  Volumes:                                           │
-│  • postgres_data → /var/lib/postgresql/data         │
-└─────────────────────────────────────────────────────┘
+│  Volumes:                                            │
+│  • postgres_data → /var/lib/postgresql/data          │
+└──────────────────────────────────────────────────────┘
 ```
 
-### Servicios
+### Services
 
 1. **PostgreSQL** (`postgres`)
-   - Imagen: `postgres:15-alpine`
-   - Puerto: 5432
-   - Volumen persistente para datos
-   - Health check cada 10 segundos
+   - Image: `postgres:15-alpine`
+   - Port: 5432
+   - Persistent volume for data
+   - Health check every 10 seconds
 
 2. **Backend** (`backend`)
-   - Build: Multi-stage desde `./backend/Dockerfile`
-   - Puerto: 3000
-   - Ejecuta migraciones automáticamente al iniciar
-   - Depende de PostgreSQL (espera health check)
+   - Build: Multi-stage from `./backend/Dockerfile`
+   - Port: 3000
+   - Runs migrations automatically on startup
+   - Depends on PostgreSQL (waits for health check)
 
 3. **Frontend** (`frontend`)
-   - Build: Multi-stage desde `./frontend/Dockerfile`
-   - Puerto: 80
-   - Nginx sirviendo SPA de React
-   - Proxy pass a backend para /api/*
+   - Build: Multi-stage from `./frontend/Dockerfile`
+   - Port: 80
+   - Nginx serving React SPA
+   - Proxy pass to backend for /api/*
 
-### Red y Comunicación
+### Network and Communication
 
-- **Red personalizada**: `ai-team-network` (tipo bridge)
-- Los servicios se comunican usando nombres de servicio DNS:
+- **Custom network**: `ai-team-network` (bridge type)
+- Services communicate using DNS service names:
   - Frontend → Backend: `http://backend:3000`
   - Backend → PostgreSQL: `postgresql://postgres:5432`
 
-## ✅ Requisitos Previos
+## ✅ Prerequisites
 
-Antes de comenzar, asegúrate de tener instalado:
+Before you begin, make sure you have installed:
 
-- **Docker Engine** 20.10 o superior
-- **Docker Compose** 2.0 o superior
-- **Git** (para clonar el repositorio)
-- **Mínimo 2GB RAM** disponible para contenedores
-- **4GB espacio en disco** para imágenes y volúmenes
+- **Docker Engine** 20.10 or higher
+- **Docker Compose** 2.0 or higher
+- **Git** (to clone the repository)
+- **Minimum 2GB RAM** available for containers
+- **4GB disk space** for images and volumes
 
-### Verificar instalación
+### Verify Installation
 
 ```bash
-# Verificar Docker
+# Verify Docker
 docker --version
-# Debe mostrar: Docker version 20.10.x o superior
+# Should show: Docker version 20.10.x or higher
 
-# Verificar Docker Compose
+# Verify Docker Compose
 docker compose version
-# Debe mostrar: Docker Compose version v2.x.x o superior
+# Should show: Docker Compose version v2.x.x or higher
 
-# Verificar que Docker está ejecutándose
+# Verify that Docker is running
 docker ps
-# No debe mostrar error de conexión
+# Should not show connection error
 ```
 
-## ⚙️ Configuración Inicial
+## ⚙️ Initial Configuration
 
-### 1. Clonar el Repositorio
+### 1. Clone the Repository
 
 ```bash
-git clone <tu-repositorio-url>
+git clone git@github.com:manurgdev/ai-team.git
 cd ai-team
 ```
 
-### 2. Configurar Variables de Entorno
+### 2. Configure Environment Variables
 
-Copia el archivo de ejemplo y edítalo:
+Copy the example file and edit it:
 
 ```bash
 cp .env.example .env
 ```
 
-Edita el archivo `.env` con tus valores:
+Edit the `.env` file with your values:
 
 ```bash
-# Puedes usar nano, vim o cualquier editor
+# You can use nano, vim, or any editor
 nano .env
 ```
 
-### 3. Variables de Entorno Explicadas
+### 3. Environment Variables Explained
 
-#### 🗄️ Base de Datos
+#### 🗄️ Database
 
 ```env
-DB_USER=aiuser                    # Usuario de PostgreSQL
-DB_PASSWORD=aipassword            # Contraseña de PostgreSQL
-DB_NAME=ai_team                   # Nombre de la base de datos
-DB_PORT=5432                      # Puerto expuesto (host)
+DB_USER=aiuser                    # PostgreSQL user
+DB_PASSWORD=aipassword            # PostgreSQL password
+DB_NAME=ai_team                   # Database name
+DB_PORT=5432                      # Exposed port (host)
 ```
 
-⚠️ **Importante**: En producción, usa contraseñas seguras, no los valores de ejemplo.
+⚠️ **Important**: In production, use secure passwords, not the example values.
 
-#### 🔐 Seguridad (JWT y Encriptación)
+#### 🔐 Security (JWT and Encryption)
 
 ```env
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
@@ -136,45 +136,45 @@ JWT_EXPIRES_IN=7d
 ENCRYPTION_SECRET=your-super-secret-encryption-key-change-this-in-production-must-be-32-chars
 ```
 
-⚠️ **CRÍTICO**:
-- `JWT_SECRET`: Debe ser una cadena aleatoria larga (mínimo 32 caracteres)
-- `ENCRYPTION_SECRET`: Debe tener exactamente 32 caracteres para AES-256
-- **NUNCA** uses los valores de ejemplo en producción
-- Genera secretos seguros:
+⚠️ **CRITICAL**:
+- `JWT_SECRET`: Must be a long random string (minimum 32 characters)
+- `ENCRYPTION_SECRET`: Must be exactly 32 characters for AES-256
+- **NEVER** use example values in production
+- Generate secure secrets:
   ```bash
   # JWT_SECRET
   openssl rand -base64 48
 
-  # ENCRYPTION_SECRET (exactamente 32 caracteres)
+  # ENCRYPTION_SECRET (exactly 32 characters)
   openssl rand -base64 32 | cut -c1-32
   ```
 
-#### 🌐 Backend y CORS
+#### 🌐 Backend and CORS
 
 ```env
-NODE_ENV=production               # production o development
-BACKEND_PORT=3000                 # Puerto expuesto del backend
+NODE_ENV=production               # production or development
+BACKEND_PORT=3000                 # Exposed backend port
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost
 ```
 
-`ALLOWED_ORIGINS`: Lista separada por comas de orígenes permitidos para CORS.
-- **Desarrollo local**: `http://localhost:5173,http://localhost`
-- **Producción**: `https://tudominio.com,https://www.tudominio.com`
+`ALLOWED_ORIGINS`: Comma-separated list of allowed origins for CORS.
+- **Local development**: `http://localhost:5173,http://localhost`
+- **Production**: `https://yourdomain.com,https://www.yourdomain.com`
 
 #### 🎨 Frontend
 
 ```env
-FRONTEND_PORT=80                  # Puerto expuesto del frontend
+FRONTEND_PORT=80                  # Exposed frontend port
 VITE_API_URL=http://localhost:3000/api
 ```
 
-`VITE_API_URL`: URL del backend que el frontend usará.
-- **Desarrollo local**: `http://localhost:3000/api`
-- **Producción**: `https://api.tudominio.com/api` o `https://tudominio.com/api`
+`VITE_API_URL`: Backend URL that the frontend will use.
+- **Local development**: `http://localhost:3000/api`
+- **Production**: `https://api.yourdomain.com/api` or `https://yourdomain.com/api`
 
-#### 🤖 API Keys de IA (Opcional)
+#### 🤖 AI API Keys (Optional)
 
-Estos son opcionales. Los usuarios pueden configurarlos dentro de la aplicación:
+These are optional. Users can configure them within the application:
 
 ```env
 ANTHROPIC_API_KEY=               # Claude API key
@@ -182,313 +182,313 @@ OPENAI_API_KEY=                  # OpenAI API key
 GOOGLE_API_KEY=                  # Google AI API key
 ```
 
-#### 🐙 GitHub OAuth (Opcional)
+#### 🐙 GitHub OAuth (Optional)
 
-Para futuras integraciones de GitHub:
+For future GitHub integrations:
 
 ```env
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 ```
 
-## 🚀 Desarrollo Local
+## 🚀 Local Development
 
-### Iniciar la Aplicación
+### Start the Application
 
 ```bash
-# Construir imágenes e iniciar todos los servicios
+# Build images and start all services
 docker compose up -d
 
-# Ver logs en tiempo real
+# View logs in real-time
 docker compose logs -f
 ```
 
-La opción `-d` ejecuta los contenedores en background (detached mode).
+The `-d` option runs containers in background (detached mode).
 
-### Acceder a los Servicios
+### Access the Services
 
-Una vez iniciados, accede a:
+Once started, access:
 
-- **Frontend**: http://localhost (puerto 80)
+- **Frontend**: http://localhost (port 80)
 - **Backend API**: http://localhost:3000
 - **PostgreSQL**: localhost:5432
 
-### Verificar Estado
+### Check Status
 
 ```bash
-# Ver estado de todos los servicios
+# View status of all services
 docker compose ps
 
-# Debería mostrar algo como:
+# Should show something like:
 # NAME                  IMAGE                COMMAND             STATUS
 # ai-team-backend       ai-team-backend      ...                 Up
 # ai-team-frontend      ai-team-frontend     ...                 Up
 # ai-team-postgres      postgres:15-alpine   ...                 Up (healthy)
 ```
 
-### Ver Logs
+### View Logs
 
 ```bash
-# Logs de todos los servicios
+# Logs from all services
 docker compose logs -f
 
-# Logs de un servicio específico
+# Logs from a specific service
 docker compose logs -f backend
 docker compose logs -f frontend
 docker compose logs -f postgres
 
-# Ver últimas 100 líneas
+# View last 100 lines
 docker compose logs --tail=100 backend
 ```
 
-### Detener la Aplicación
+### Stop the Application
 
 ```bash
-# Detener servicios (conserva volúmenes y red)
+# Stop services (keeps volumes and network)
 docker compose stop
 
-# Detener y eliminar contenedores (conserva volúmenes)
+# Stop and remove containers (keeps volumes)
 docker compose down
 
-# Detener, eliminar contenedores Y volúmenes (⚠️ borra datos)
+# Stop, remove containers AND volumes (⚠️ deletes data)
 docker compose down -v
 ```
 
-### Reconstruir tras Cambios de Código
+### Rebuild After Code Changes
 
-Cuando hagas cambios en el código, necesitas reconstruir las imágenes:
+When you make code changes, you need to rebuild the images:
 
 ```bash
-# Reconstruir todas las imágenes
+# Rebuild all images
 docker compose build
 
-# Reconstruir sin caché (construcción limpia)
+# Rebuild without cache (clean build)
 docker compose build --no-cache
 
-# Reconstruir y reiniciar
+# Rebuild and restart
 docker compose up -d --build
 
-# Reconstruir solo un servicio
+# Rebuild only one service
 docker compose build backend
 docker compose up -d backend
 ```
 
-### Hot-Reload en Desarrollo
+### Hot-Reload in Development
 
-Por defecto, Docker ejecuta builds de producción. Para desarrollo con hot-reload:
+By default, Docker runs production builds. For development with hot-reload:
 
-1. Usa `docker-compose.override.yml` (ver sección siguiente)
-2. O ejecuta el backend/frontend localmente sin Docker:
+1. Use `docker-compose.override.yml` (see next section)
+2. Or run backend/frontend locally without Docker:
 
 ```bash
-# Backend local
+# Local backend
 cd backend
 npm install
 npm run dev
 
-# Frontend local (en otra terminal)
+# Local frontend (in another terminal)
 cd frontend
 npm install
 npm run dev
 ```
 
-Y solo ejecuta PostgreSQL con Docker:
+And only run PostgreSQL with Docker:
 
 ```bash
 docker compose up -d postgres
 ```
 
-## 🗄️ Gestión de Base de Datos
+## 🗄️ Database Management
 
-### Ejecutar Migraciones de Prisma
+### Run Prisma Migrations
 
-Las migraciones se ejecutan automáticamente al iniciar el backend, pero puedes ejecutarlas manualmente:
+Migrations run automatically when starting the backend, but you can run them manually:
 
 ```bash
-# Ejecutar migraciones pendientes
+# Run pending migrations
 docker compose exec backend npx prisma migrate deploy --schema=./src/prisma/schema.prisma
 
-# Ver estado de migraciones
+# View migration status
 docker compose exec backend npx prisma migrate status --schema=./src/prisma/schema.prisma
 ```
 
-### Generar Cliente de Prisma
+### Generate Prisma Client
 
-Si modificas el schema de Prisma:
+If you modify the Prisma schema:
 
 ```bash
 docker compose exec backend npx prisma generate --schema=./src/prisma/schema.prisma
 ```
 
-### Prisma Studio (Interfaz Visual)
+### Prisma Studio (Visual Interface)
 
-Explora y edita datos con Prisma Studio:
+Explore and edit data with Prisma Studio:
 
 ```bash
 docker compose exec backend npx prisma studio --schema=./src/prisma/schema.prisma
 ```
 
-Luego abre: http://localhost:5555
+Then open: http://localhost:5555
 
-### Acceder a PostgreSQL Directamente
+### Access PostgreSQL Directly
 
 ```bash
-# Conectar con psql
+# Connect with psql
 docker compose exec postgres psql -U aiuser -d ai_team
 
-# Dentro de psql, puedes ejecutar queries SQL:
-# \dt          - Listar tablas
-# \d tabla     - Describir tabla
+# Inside psql, you can run SQL queries:
+# \dt          - List tables
+# \d table     - Describe table
 # SELECT * FROM "User";
-# \q           - Salir
+# \q           - Exit
 ```
 
-### Backup de Base de Datos
+### Database Backup
 
 ```bash
-# Crear backup
+# Create backup
 docker compose exec postgres pg_dump -U aiuser ai_team > backup_$(date +%Y%m%d_%H%M%S).sql
 
-# O con compresión
+# Or with compression
 docker compose exec postgres pg_dump -U aiuser ai_team | gzip > backup_$(date +%Y%m%d_%H%M%S).sql.gz
 ```
 
-### Restaurar desde Backup
+### Restore from Backup
 
 ```bash
-# Restaurar desde archivo SQL
+# Restore from SQL file
 docker compose exec -T postgres psql -U aiuser ai_team < backup_20240123_120000.sql
 
-# Restaurar desde archivo comprimido
+# Restore from compressed file
 gunzip -c backup_20240123_120000.sql.gz | docker compose exec -T postgres psql -U aiuser ai_team
 ```
 
-### Reiniciar Base de Datos (⚠️ Borra Todos los Datos)
+### Reset Database (⚠️ Deletes All Data)
 
 ```bash
-# Detener servicios
+# Stop services
 docker compose down
 
-# Eliminar volumen de PostgreSQL
+# Remove PostgreSQL volume
 docker volume rm ai-team_postgres_data
 
-# Reiniciar (creará nueva BD vacía)
+# Restart (will create new empty database)
 docker compose up -d
 ```
 
-## 🛠️ Comandos Útiles
+## 🛠️ Useful Commands
 
-### Gestión de Contenedores
+### Container Management
 
 ```bash
-# Reiniciar un servicio específico
+# Restart a specific service
 docker compose restart backend
 
-# Reiniciar todos los servicios
+# Restart all services
 docker compose restart
 
-# Ver estadísticas de recursos (CPU, memoria)
+# View resource statistics (CPU, memory)
 docker stats
 
-# Ver solo los de esta app
+# View only this app's containers
 docker stats ai-team-backend ai-team-frontend ai-team-postgres
 
-# Pausar servicios (sin detener)
+# Pause services (without stopping)
 docker compose pause
 
-# Reanudar servicios pausados
+# Resume paused services
 docker compose unpause
 ```
 
-### Ejecutar Comandos dentro de Contenedores
+### Execute Commands Inside Containers
 
 ```bash
-# Abrir shell en un contenedor
+# Open shell in a container
 docker compose exec backend sh
 docker compose exec frontend sh
 docker compose exec postgres sh
 
-# Ejecutar comando sin abrir shell
+# Execute command without opening shell
 docker compose exec backend npm run test
 docker compose exec backend node --version
 
-# Ejecutar como root (para instalar paquetes, etc.)
+# Execute as root (to install packages, etc.)
 docker compose exec -u root backend sh
 ```
 
-### Inspección y Debugging
+### Inspection and Debugging
 
 ```bash
-# Inspeccionar configuración de un servicio
+# Inspect service configuration
 docker compose config
 
-# Ver detalles de un contenedor
+# View container details
 docker inspect ai-team-backend
 
-# Ver logs con timestamps
+# View logs with timestamps
 docker compose logs -f -t backend
 
-# Buscar en logs
+# Search in logs
 docker compose logs backend | grep ERROR
 
-# Ver procesos dentro de un contenedor
+# View processes inside a container
 docker compose exec backend ps aux
 ```
 
-### Limpieza y Mantenimiento
+### Cleanup and Maintenance
 
 ```bash
-# Eliminar contenedores detenidos
+# Remove stopped containers
 docker container prune
 
-# Eliminar imágenes no utilizadas
+# Remove unused images
 docker image prune
 
-# Eliminar todo no utilizado (contenedores, redes, imágenes)
+# Remove all unused (containers, networks, images)
 docker system prune
 
-# Limpieza agresiva (incluye volúmenes)
+# Aggressive cleanup (includes volumes)
 docker system prune -a --volumes
 
-# Ver espacio usado por Docker
+# View space used by Docker
 docker system df
 ```
 
-### Red y Conectividad
+### Network and Connectivity
 
 ```bash
-# Inspeccionar red
+# Inspect network
 docker network inspect ai-team_ai-team-network
 
-# Ver IPs de los contenedores
+# View container IPs
 docker compose exec backend ip addr
 docker compose exec backend hostname -i
 
-# Probar conectividad entre servicios
+# Test connectivity between services
 docker compose exec backend ping postgres
 docker compose exec frontend ping backend
 
-# Verificar conectividad a PostgreSQL
+# Verify connectivity to PostgreSQL
 docker compose exec backend nc -zv postgres 5432
 ```
 
-### Variables de Entorno
+### Environment Variables
 
 ```bash
-# Ver variables de entorno de un contenedor
+# View environment variables of a container
 docker compose exec backend env
 
-# Ver solo DATABASE_URL
+# View only DATABASE_URL
 docker compose exec backend sh -c 'echo $DATABASE_URL'
 ```
 
-## 🔍 Solución de Problemas
+## 🔍 Troubleshooting
 
 ### Error: "Containers already exist"
 
-**Problema**: `ERROR: service "backend" is already running`
+**Problem**: `ERROR: service "backend" is already running`
 
-**Solución**:
+**Solution**:
 ```bash
 docker compose down
 docker compose up -d
@@ -496,164 +496,163 @@ docker compose up -d
 
 ### Error: "Port already allocated"
 
-**Problema**: `bind: address already in use` o puerto 80/3000/5432 en uso
+**Problem**: `bind: address already in use` or port 80/3000/5432 in use
 
-**Solución**:
+**Solution**:
 ```bash
-# Encontrar qué proceso usa el puerto
+# Find which process uses the port
 lsof -i :80
 lsof -i :3000
 lsof -i :5432
 
-# Detener ese proceso o cambiar puerto en .env
-# Por ejemplo:
+# Stop that process or change port in .env
+# For example:
 FRONTEND_PORT=8080
 BACKEND_PORT=3001
 DB_PORT=5433
 ```
 
-### Frontend no se conecta al Backend
+### Frontend Cannot Connect to Backend
 
-**Problema**: Errores CORS o "Failed to fetch"
+**Problem**: CORS errors or "Failed to fetch"
 
-**Solución**:
-1. Verifica `ALLOWED_ORIGINS` en `.env`
-2. Verifica `VITE_API_URL` en `.env`
-3. Reconstruye frontend:
+**Solution**:
+1. Check `ALLOWED_ORIGINS` in `.env`
+2. Check `VITE_API_URL` in `.env`
+3. Rebuild frontend:
    ```bash
    docker compose build frontend
    docker compose up -d frontend
    ```
 
-### Base de Datos no inicia
+### Database Does Not Start
 
-**Problema**: PostgreSQL unhealthy o no inicia
+**Problem**: PostgreSQL unhealthy or won't start
 
-**Solución**:
+**Solution**:
 ```bash
-# Ver logs detallados
+# View detailed logs
 docker compose logs postgres
 
-# Verificar permisos del volumen
+# Check volume permissions
 docker volume inspect ai-team_postgres_data
 
-# Si es problema de permisos, recrea el volumen
+# If it's a permissions issue, recreate the volume
 docker compose down -v
 docker compose up -d
 ```
 
-### Backend falla al ejecutar migraciones
+### Backend Fails to Run Migrations
 
-**Problema**: `Error: P1001: Can't reach database server`
+**Problem**: `Error: P1001: Can't reach database server`
 
-**Solución**:
-1. Verifica que PostgreSQL esté healthy:
+**Solution**:
+1. Verify that PostgreSQL is healthy:
    ```bash
    docker compose ps
    ```
-2. Verifica `DATABASE_URL` en logs del backend:
+2. Check `DATABASE_URL` in backend logs:
    ```bash
    docker compose logs backend | grep DATABASE_URL
    ```
-3. Reinicia servicios respetando dependencias:
+3. Restart services respecting dependencies:
    ```bash
    docker compose down
    docker compose up -d postgres
-   # Esperar a que esté healthy (10-20 segundos)
+   # Wait until it's healthy (10-20 seconds)
    docker compose up -d backend frontend
    ```
 
-### Contenedor se reinicia continuamente
+### Container Restarts Continuously
 
-**Problema**: Estado `Restarting` constantemente
+**Problem**: `Restarting` status constantly
 
-**Solución**:
+**Solution**:
 ```bash
-# Ver logs para identificar error
+# View logs to identify error
 docker compose logs -f backend
 
-# Revisar exit code
+# Check exit code
 docker inspect ai-team-backend --format='{{.State.ExitCode}}'
 
-# Errores comunes:
-# - Variables de entorno faltantes
-# - Puerto ya en uso
-# - Dependencia no disponible (BD)
+# Common errors:
+# - Missing environment variables
+# - Port already in use
+# - Dependency not available (database)
 ```
 
-### Cambios de código no se reflejan
+### Code Changes Not Reflected
 
-**Problema**: Modificaste código pero no ves cambios
+**Problem**: You modified code but don't see changes
 
-**Solución**:
+**Solution**:
 ```bash
-# Reconstruir imagen sin caché
+# Rebuild image without cache
 docker compose build --no-cache backend
 docker compose up -d backend
 
-# O para todo
+# Or for everything
 docker compose down
 docker compose build --no-cache
 docker compose up -d
 ```
 
-### Volumen sin espacio
+### Volume Out of Space
 
-**Problema**: `no space left on device`
+**Problem**: `no space left on device`
 
-**Solución**:
+**Solution**:
 ```bash
-# Ver espacio usado
+# View space used
 docker system df
 
-# Limpiar imágenes no usadas
+# Clean unused images
 docker image prune -a
 
-# Limpiar todo
+# Clean everything
 docker system prune -a --volumes
 
-# Ver tamaño de volúmenes
+# View volume sizes
 docker volume ls
 docker system df -v
 ```
 
-### No puedes conectarte desde el host
+### Cannot Connect from Host
 
-**Problema**: No puedes acceder a http://localhost desde tu navegador
+**Problem**: You can't access http://localhost from your browser
 
-**Solución**:
-1. Verifica que los contenedores estén corriendo:
+**Solution**:
+1. Verify that containers are running:
    ```bash
    docker compose ps
    ```
-2. Verifica que los puertos estén mapeados:
+2. Verify that ports are mapped:
    ```bash
    docker compose port frontend 80
    docker compose port backend 3000
    ```
-3. Prueba con curl:
+3. Test with curl:
    ```bash
    curl http://localhost
    curl http://localhost:3000/api
    ```
 
-## 📚 Recursos Adicionales
+## 📚 Additional Resources
 
-- [Guía de Deployment](./DEPLOYMENT.md) - Despliegue en producción
-- [Seguridad Docker](./SECURITY-DOCKER.md) - Mejores prácticas de seguridad
-- [Troubleshooting Avanzado](./TROUBLESHOOTING-DOCKER.md) - Solución de problemas complejos
+- [Deployment Guide](./DEPLOYMENT.md) - Production deployment
+- [Advanced Troubleshooting](./TROUBLESHOOTING-DOCKER.md) - Complex problem solving
 - [Docker Documentation](https://docs.docker.com/)
 - [Docker Compose Reference](https://docs.docker.com/compose/compose-file/)
 
-## 🆘 Obtener Ayuda
+## 🆘 Get Help
 
-Si encuentras problemas no cubiertos en esta guía:
+If you encounter problems not covered in this guide:
 
-1. Revisa los logs detallados: `docker compose logs -f`
-2. Consulta [TROUBLESHOOTING-DOCKER.md](./TROUBLESHOOTING-DOCKER.md)
-3. Busca el error en Docker/GitHub issues
-4. Abre un issue en el repositorio del proyecto
+1. Check detailed logs: `docker compose logs -f`
+2. Consult [TROUBLESHOOTING-DOCKER.md](./TROUBLESHOOTING-DOCKER.md)
+3. Search for the error in Docker/GitHub issues
+4. Open an issue in the project repository
 
 ---
 
-**Siguiente paso**: Para despliegue en producción, consulta [DEPLOYMENT.md](./DEPLOYMENT.md)
+**Next step**: For production deployment, see [DEPLOYMENT.md](./DEPLOYMENT.md)
