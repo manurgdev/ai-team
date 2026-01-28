@@ -39,3 +39,6 @@ logs
 # Misc
 *.md
 !README.md
+
+# Documentation assets
+walktrough-images/

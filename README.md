@@ -27,7 +27,8 @@ make start-dev
 # Backend API: http://localhost:3000
 ```
 
-**📚 Complete Docker documentation:**
+**📚 Documentation:**
+- **[WALKTHROUGH.md](./WALKTHROUGH.md)** - 🎯 **Start here!** Visual step-by-step guide for new users
 - **[README-DOCKER.md](./README-DOCKER.md)** - Complete Docker usage guide
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Production deployment
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common troubleshooting
@@ -63,7 +64,7 @@ This platform allows you to create teams of AI agents with different specializat
 - **GitHub Integration**: @octokit/rest
 
 ### Supported AI Providers
-1. Anthropic (Claude 3.5 Sonnet)
+1. Anthropic (Claude 4.5 Sonnet, Opus, Haiku)
 2. OpenAI (GPT-4, GPT-4-turbo)
 3. Google (Gemini Pro)
 
